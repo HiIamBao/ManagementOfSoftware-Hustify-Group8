@@ -46,7 +46,7 @@ Hustify is a voice-enabled AI platform that helps job seekers practice interview
 ### 1) Clone and install
 ```bash
 git clone <repo-url>
-cd hustify-voice-assistant
+cd Hustify_Programming
 npm install
 ```
 
