@@ -30,7 +30,7 @@ export default function UserEducation({ user }: { user: User }) {
     setForm({ school: "", className: "", year: "", description: "", image: "" });
     setEditing(false);
 
-    // Gọi API lưu education mới lên Firestore
+    // Gọi API để lưu education mới lên Firestore
     await fetch("/api/user/update", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
