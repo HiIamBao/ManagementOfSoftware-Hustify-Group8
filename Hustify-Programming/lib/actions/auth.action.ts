@@ -27,7 +27,7 @@ export async function setSessionCookie(idToken: string) {
 }
 
 export async function signUp(params: SignUpParams) {
-  const { uid, name, email } = params;
+  const { uid, name, email, userRole = "normal", companyName } = params;
 
   try {
     // check if user exists in db
@@ -38,10 +38,30 @@ export async function signUp(params: SignUpParams) {
         message: "User already exists. Please sign in.",
       };
 
+    let companyId: string | undefined;
+
+    // If HR user, create company
+    if (userRole === "hr" && companyName) {
+      const companyRef = db.collection("companies").doc();
+      companyId = companyRef.id;
+
+      await companyRef.set({
+        name: companyName,
+        description: "",
+        followers: 0,
+        hrAdmins: [uid],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
     // save user to db
     await db.collection("users").doc(uid).set({
       name,
       email,
+      userRole,
+      companyId,
+      darkmode: false,
       // profileURL,
       // resumeURL,
     });
