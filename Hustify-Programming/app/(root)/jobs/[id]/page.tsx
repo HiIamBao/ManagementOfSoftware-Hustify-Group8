@@ -1,19 +1,23 @@
 import { getJobById } from "@/lib/actions/general.action";
 import { notFound } from "next/navigation";
-import JobDetailClient from "../JobDetailClient"; // Import the client component
+import JobDetailClient from "../JobDetailClient";
 import { Job } from "@/types";
 
+// 1. Cập nhật Interface: params là Promise
 interface JobDetailPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-export default async function JobDetailPage({ params }: JobDetailPageProps) {
+export default async function JobDetailPage(props: JobDetailPageProps) {
+  // 2. Await params trước khi sử dụng
+  const params = await props.params;
+  
+  // Bây giờ mới được dùng params.id
   const job: Job | null = await getJobById(params.id);
 
   if (!job) {
     notFound();
   }
 
-  // Pass the job data to the client component
   return <JobDetailClient job={job} />;
 }

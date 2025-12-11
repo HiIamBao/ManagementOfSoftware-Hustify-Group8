@@ -339,80 +339,71 @@ export async function getCompanyById(id: string): Promise<Company | null> {
     return null;
   }
 }
-
+interface ApplyJobParams {
+  jobId: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  cvLink: string;
+  coverLetter?: string;
+}
 export async function applyToJob(
-  jobId: string
+  params: ApplyJobParams
 ): Promise<{ success: boolean; message: string }> {
   try {
-    // Get current user from cookies (you'll need to implement this based on your auth system)
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get("session")?.value;
+    const { jobId, fullName, email, phone, cvLink, coverLetter } = params;
 
-    if (!sessionCookie) {
-      return {
-        success: false,
-        message: "You must be logged in to apply for a job",
-      };
+    // 1. Check Authentication
+    const user = await getCurrentUser();
+    if (!user) {
+      return { success: false, message: "You must be logged in to apply." };
     }
 
-    // Get job reference
+    // 2. Fetch Job from Firestore
     const jobRef = db.collection("jobs").doc(jobId);
     const jobDoc = await jobRef.get();
 
     if (!jobDoc.exists) {
-      return {
-        success: false,
-        message: "Job not found",
-      };
+      return { success: false, message: "Job not found." };
     }
 
-    // Get current user ID (replace with your actual auth logic)
-    // For example, decode the session cookie to get the user ID
-    // This is just a placeholder - implement your actual user ID extraction
-    const userId = "current-user-id"; // Replace with actual user ID extraction
-
-    // Check if user has already applied
     const jobData = jobDoc.data();
 
-    const jobDataTyped = jobData as { applicants?: Applicant[] };
+    // 3. Check for Existing Application
+    // Use 'any' type casting for applicants to avoid TS errors if not strictly defined
+    const applicants = (jobData?.applicants || []) as any[];
+    const hasApplied = applicants.some((app) => app.userId === user.id);
 
-    const existingApplication = jobDataTyped?.applicants?.find(
-      (app: Applicant) => app.userId === userId
-    );
-
-    if (existingApplication) {
-      return {
-        success: false,
-        message: "You have already applied for this job",
-      };
+    if (hasApplied) {
+      return { success: false, message: "You have already applied for this job." };
     }
 
-    // Update job with new applicant and increment count
+    // 4. Create New Applicant Data
     const newApplicant = {
-      userId: userId,
+      userId: user.id,
+      userName: fullName,
+      email: email,
+      phone: phone,
+      cvLink: cvLink,
+      coverLetter: coverLetter || "",
       appliedAt: new Date().toISOString(),
       status: "pending",
     };
 
+    // 5. Update Firestore (Add to applicants array & increment count)
     await jobRef.update({
-      applicants: [...(jobData?.applicants || []), newApplicant],
+      applicants: [...applicants, newApplicant],
       applicantCount: (jobData?.applicantCount || 0) + 1,
       updatedAt: new Date().toISOString(),
     });
 
-    // Revalidate the job page to reflect changes
+    // 6. Revalidate Path to update UI immediately
     revalidatePath(`/jobs/${jobId}`);
 
-    return {
-      success: true,
-      message: "Application submitted successfully",
-    };
+    return { success: true, message: "Application submitted successfully!" };
   } catch (error) {
     console.error("Error applying to job:", error);
-    return {
-      success: false,
-      message: "An error occurred while submitting your application",
-    };
+    return { success: false, message: "An error occurred. Please try again later." };
   }
 }
 export async function getFeedbacksByUserId(
