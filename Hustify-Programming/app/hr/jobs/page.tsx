@@ -3,6 +3,8 @@ import { getHRJobs, deleteJob, publishJob, closeJob } from "@/lib/actions/hr-job
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Pencil, CheckCircle2, XCircle, Users, MoreVertical, Trash2 } from "lucide-react";
 
 export default async function HRJobsPage() {
   const user = await getCurrentUser();
@@ -23,16 +25,16 @@ export default async function HRJobsPage() {
             Manage your job postings and applicants
           </p>
         </div>
-        <Link href="/hr/jobs/new" className="btn">
-          + Create New Job
-        </Link>
+        <Button asChild>
+          <Link href="/hr/jobs/new">+ Create New Job</Link>
+        </Button>
       </div>
 
       {/* Jobs List */}
       <div className="bg-white dark:bg-[#121212] rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
         {jobs && jobs.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="min-w-full table-auto">
               <thead className="bg-gray-50 dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-gray-800">
                 <tr>
                   <th className="px-6 py-3 text-left text-sm font-semibold">
@@ -50,7 +52,7 @@ export default async function HRJobsPage() {
                   <th className="px-6 py-3 text-left text-sm font-semibold">
                     Posted
                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold">
+                  <th className="px-6 py-3 text-left text-sm font-semibold w-[200px]">
                     Actions
                   </th>
                 </tr>
@@ -80,24 +82,22 @@ export default async function HRJobsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <Link
-                        href={`/hr/jobs/${job.id}/applicants`}
-                        className="text-[#BF3131] font-medium hover:underline"
-                      >
-                        {job.applicantCount || 0}
-                      </Link>
+                      <Button asChild size="sm" variant="outline" className="rounded-full px-3">
+                        <Link href={`/hr/jobs/${job.id}/applicants`}>
+                          {(job.applicantCount || 0) + " applicants"}
+                        </Link>
+                      </Button>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                      {new Date(job.createdAt).toLocaleDateString()}
+                      {new Date(job.createdAt || job.postedDate || Date.now()).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex gap-2">
-                        <Link
-                          href={`/hr/jobs/${job.id}/edit`}
-                          className="text-sm text-[#BF3131] hover:underline"
-                        >
-                          Edit
-                        </Link>
+                      <div className="flex items-center gap-2">
+                        <Button asChild size="sm" variant="outline" className="rounded-full">
+                          <Link href={`/hr/jobs/${job.id}/edit`}>
+                            <Pencil className="h-4 w-4 mr-1" /> Edit
+                          </Link>
+                        </Button>
                         {job.status === "draft" && (
                           <form
                             action={async () => {
@@ -105,12 +105,9 @@ export default async function HRJobsPage() {
                               await publishJob(job.id);
                             }}
                           >
-                            <button
-                              type="submit"
-                              className="text-sm text-green-600 hover:underline"
-                            >
-                              Publish
-                            </button>
+                            <Button type="submit" size="sm" variant="outline" className="rounded-full border-green-200 text-green-700 hover:bg-green-50">
+                              <CheckCircle2 className="h-4 w-4 mr-1" /> Publish
+                            </Button>
                           </form>
                         )}
                         {job.status === "published" && (
@@ -120,14 +117,39 @@ export default async function HRJobsPage() {
                               await closeJob(job.id);
                             }}
                           >
-                            <button
-                              type="submit"
-                              className="text-sm text-orange-600 hover:underline"
-                            >
-                              Close
-                            </button>
+                            <Button type="submit" size="sm" variant="outline" className="rounded-full border-orange-200 text-orange-700 hover:bg-orange-50">
+                              <XCircle className="h-4 w-4 mr-1" /> Close
+                            </Button>
                           </form>
                         )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                              <span className="sr-only">More</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem asChild>
+                              <Link href={`/hr/jobs/${job.id}/applicants`} className="flex items-center gap-2">
+                                <Users className="h-4 w-4" /> View applicants
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem asChild>
+                              <form
+                                action={async () => {
+                                  "use server";
+                                  await deleteJob(job.id);
+                                }}
+                              >
+                                <button type="submit" className="flex w-full items-center gap-2 text-red-600">
+                                  <Trash2 className="h-4 w-4" /> Delete
+                                </button>
+                              </form>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </td>
                   </tr>
@@ -136,13 +158,13 @@ export default async function HRJobsPage() {
             </table>
           </div>
         ) : (
-          <div className="p-8 text-center">
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              No jobs posted yet
+          <div className="p-12 text-center bg-white dark:bg-[#121212]">
+            <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
+              You haven’t posted any jobs yet.
             </p>
-            <Link href="/hr/jobs/new" className="btn">
-              Create Your First Job
-            </Link>
+            <Button asChild>
+              <Link href="/hr/jobs/new">Create your first job</Link>
+            </Button>
           </div>
         )}
       </div>

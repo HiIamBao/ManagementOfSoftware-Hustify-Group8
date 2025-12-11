@@ -7,6 +7,7 @@ import {
 } from "@/lib/actions/hr-analytics.action";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 export default async function HRDashboard() {
   const user = await getCurrentUser();
@@ -33,9 +34,9 @@ export default async function HRDashboard() {
             Manage your job postings and applicants
           </p>
         </div>
-        <Link href="/hr/jobs/new" className="btn">
-          + Create New Job
-        </Link>
+        <Button asChild>
+          <Link href="/hr/jobs/new">+ Create New Job</Link>
+        </Button>
       </div>
 
       {/* Statistics Cards */}

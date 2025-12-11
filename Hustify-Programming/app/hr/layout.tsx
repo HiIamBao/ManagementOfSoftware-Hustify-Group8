@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/lib/actions/auth.action";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import HRUserMenu from "@/components/hr/HRUserMenu";
 
 export default async function HRLayout({
   children,
@@ -46,13 +47,8 @@ export default async function HRLayout({
                 </Link>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {user.name}
-              </span>
-              <Link href="/user" className="btn-secondary">
-                Profile
-              </Link>
+            <div className="flex items-center gap-3">
+              <HRUserMenu user={user as any} />
             </div>
           </div>
         </div>
