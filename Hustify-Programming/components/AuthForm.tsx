@@ -4,6 +4,7 @@ import { z } from "zod";
 import Link from "next/link";
 import Image from "next/image";
 import { toast } from "sonner";
+import { useState } from "react";
 import { auth } from "@/firebase/client";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
@@ -25,11 +26,14 @@ const authFormSchema = (type: FormType) => {
     name: type === "sign-up" ? z.string().min(3) : z.string().optional(),
     email: z.string().email(),
     password: z.string().min(3),
+    userRole: type === "sign-up" ? z.enum(["normal", "hr"]) : z.string().optional(),
+    companyName: type === "sign-up" ? z.string().optional() : z.string().optional(),
   });
 };
 
 const AuthForm = ({ type }: { type: FormType }) => {
   const router = useRouter();
+  const [selectedRole, setSelectedRole] = useState<"normal" | "hr">("normal");
 
   const formSchema = authFormSchema(type);
   const form = useForm<z.infer<typeof formSchema>>({
@@ -38,13 +42,21 @@ const AuthForm = ({ type }: { type: FormType }) => {
       name: "",
       email: "",
       password: "",
+      userRole: "normal",
+      companyName: "",
     },
   });
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
       if (type === "sign-up") {
-        const { name, email, password } = data;
+        const { name, email, password, userRole, companyName } = data;
+
+        // Validate HR user has company name
+        if (userRole === "hr" && !companyName) {
+          toast.error("Company name is required for HR users");
+          return;
+        }
 
         const userCredential = await createUserWithEmailAndPassword(
           auth,
@@ -57,6 +69,8 @@ const AuthForm = ({ type }: { type: FormType }) => {
           name: name!,
           email,
           password,
+          userRole: userRole || "normal",
+          companyName: userRole === "hr" ? companyName : undefined,
         });
 
         if (!result.success) {
@@ -120,13 +134,59 @@ const AuthForm = ({ type }: { type: FormType }) => {
             className="w-full space-y-6 form"
           >
             {!isSignIn && (
-              <FormField
-                control={form.control}
-                name="name"
-                label="Name"
-                placeholder="Your Name"
-                type="text"
-              />
+              <>
+                <FormField
+                  control={form.control}
+                  name="name"
+                  label="Name"
+                  placeholder="Your Name"
+                  type="text"
+                />
+
+                {/* Role Selection */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">Account Type</label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        value="normal"
+                        checked={selectedRole === "normal"}
+                        onChange={(e) => {
+                          setSelectedRole(e.target.value as "normal" | "hr");
+                          form.setValue("userRole", "normal");
+                        }}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm">Normal User</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        value="hr"
+                        checked={selectedRole === "hr"}
+                        onChange={(e) => {
+                          setSelectedRole(e.target.value as "normal" | "hr");
+                          form.setValue("userRole", "hr");
+                        }}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm">HR Recruiter</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Company Name for HR Users */}
+                {selectedRole === "hr" && (
+                  <FormField
+                    control={form.control}
+                    name="companyName"
+                    label="Company Name"
+                    placeholder="Your Company Name"
+                    type="text"
+                  />
+                )}
+              </>
             )}
 
             <FormField
