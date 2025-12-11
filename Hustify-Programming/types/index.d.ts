@@ -42,6 +42,8 @@ interface User {
   email: string;
   id: string;
   darkmode: boolean;
+  userRole?: "normal" | "hr"; // Default: "normal"
+  companyId?: string; // For HR users, reference to their company
   description?: string;
   skills?: string[];
   experiences?: string[];
@@ -102,6 +104,8 @@ export interface SignUpParams {
   name: string;
   email: string;
   password: string;
+  userRole?: "normal" | "hr";
+  companyName?: string;
 }
 
 type FormType = "sign-in" | "sign-up";
@@ -142,6 +146,9 @@ type Applicant = {
   userId: string;
   appliedAt: string;
   status: "pending" | "reviewing" | "interviewed" | "rejected" | "offered";
+  rating?: number; // HR can rate applicants (0-5)
+  notes?: string; // HR notes about applicant
+  updatedAt?: string;
 };
 
 type Job = {
@@ -158,6 +165,10 @@ type Job = {
   applicants?: Applicant[];
   applicantCount: number;
   recruitmentUrl?: string;
+  postedBy?: string; // User ID of HR who posted
+  companyId?: string; // Company ID
+  status?: "draft" | "published" | "closed"; // Job status
+  viewCount?: number; // Number of views
   createdAt?: string;
   updatedAt?: string;
 };
@@ -200,4 +211,45 @@ interface RoadmapRole {
   name: string;
   tips: string[];
   nodes: RoadmapNode[];
+}
+
+// HR-specific types
+export interface CreateJobParams {
+  title: string;
+  location: string;
+  description: string;
+  responsibilities: string[];
+  requirements: string[];
+  benefits: string[];
+  recruitmentUrl?: string;
+  status?: "draft" | "published";
+}
+
+export interface UpdateJobParams extends Partial<CreateJobParams> {
+  id: string;
+}
+
+export interface CreateCompanyParams {
+  name: string;
+  description: string;
+  logo?: string;
+  coverimg?: string;
+  fields?: string[];
+}
+
+export interface JobMetrics {
+  totalJobsPosted: number;
+  totalApplicants: number;
+  openPositions: number;
+  pendingApplications: number;
+  averageApplicantsPerJob: number;
+}
+
+export interface ApplicantMetrics {
+  totalApplicants: number;
+  pendingCount: number;
+  reviewingCount: number;
+  interviewedCount: number;
+  rejectedCount: number;
+  offeredCount: number;
 }
