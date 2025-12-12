@@ -38,6 +38,7 @@ export async function createJob(params: CreateJobParams) {
       postedBy: user.id,
       companyId: user.companyId,
       status: params.status || "draft",
+      jobType: params.jobType || "full-time",
       applicantCount: 0,
       viewCount: 0,
       applicants: [],

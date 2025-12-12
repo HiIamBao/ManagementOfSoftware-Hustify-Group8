@@ -178,6 +178,7 @@ type Job = {
   postedBy?: string; // User ID of HR who posted
   companyId?: string; // Company ID
   status?: "draft" | "published" | "closed"; // Job status
+  jobType?: "full-time" | "part-time" | "remote";
   viewCount?: number; // Number of views
   createdAt?: string;
   updatedAt?: string;
@@ -233,6 +234,7 @@ export interface CreateJobParams {
   benefits: string[];
   recruitmentUrl?: string;
   status?: "draft" | "published";
+  jobType?: "full-time" | "part-time" | "remote";
 }
 
 export interface UpdateJobParams extends Partial<CreateJobParams> {
