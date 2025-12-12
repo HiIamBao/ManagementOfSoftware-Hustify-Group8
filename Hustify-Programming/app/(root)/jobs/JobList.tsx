@@ -141,7 +141,7 @@ const JobList = ({ jobs }: JobListProps) => {
                 )}
               </Button>
               <Button asChild className="btn-secondary" size="sm">
-                <Link href={`/jobs/${job.id}`}>APPLY</Link>
+                <Link href={`/jobs/${job.id}/apply`}>APPLY</Link>
               </Button>
               <Button
                 onClick={() => openJobModal(job)}
@@ -205,7 +205,7 @@ const JobList = ({ jobs }: JobListProps) => {
                 INTERVIEW
               </Button>
               <Button asChild className="btn-secondary" size="sm">
-                <Link href={`/jobs/${job.id}`}>APPLY</Link>
+                <Link href={`/jobs/${job.id}/apply`}>APPLY</Link>
               </Button>
               <Button
                 onClick={() => openJobModal(job)}

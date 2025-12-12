@@ -125,9 +125,9 @@ export default function JobDetailClient({ job }: { job: Job }) {
             )}
           </button>
                     {/* 2. THAY THẾ NÚT APPLY (LINK) BẰNG DIALOG */}
-          <ApplyJobDialog 
+          <ApplyJobDialog
             jobTitle={job.title}
-            jobId={job.id} 
+            jobId={job.id}
             trigger={
               // Giữ nguyên class btn-secondary để không đổi giao diện
               <button className="btn-secondary flex items-center justify-center">
@@ -135,6 +135,13 @@ export default function JobDetailClient({ job }: { job: Job }) {
               </button>
             }
           />
+          <Link
+            href={`/jobs/${job.id}/apply`}
+            className="btn-secondary flex items-center justify-center"
+          >
+            QUICK APPLY
+          </Link>
+
           <Link
             href="/jobs"
             className="btn-primary flex items-center justify-center"

@@ -146,6 +146,16 @@ type Applicant = {
   userId: string;
   appliedAt: string;
   status: "pending" | "reviewing" | "interviewed" | "rejected" | "offered";
+  // Application form data
+  fullName?: string;
+  email?: string;
+  phone?: string;
+  coverLetter?: string;
+  resumeUrl?: string;
+  cvLink?: string;
+  answers?: Array<{ question: string; answer: string }>;
+  attachments?: Array<{ name: string; url: string }>;
+  // HR review fields
   rating?: number; // HR can rate applicants (0-5)
   notes?: string; // HR notes about applicant
   updatedAt?: string;
