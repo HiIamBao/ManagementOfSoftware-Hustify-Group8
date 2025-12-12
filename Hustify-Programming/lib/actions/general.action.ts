@@ -271,10 +271,59 @@ export async function getAllJobs(): Promise<Job[]> {
     .orderBy("createdAt", "desc")
     .get();
 
-  return jobsSnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as Job[];
+  const rawJobs = jobsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as any[];
+
+  // Collect unique companyIds
+  const companyIds = Array.from(
+    new Set(
+      rawJobs
+        .map((j) => j.companyId)
+        .filter((id) => typeof id === "string" && id.length > 0)
+    )
+  );
+
+  // Fetch companies in parallel (simple loop; can be optimized later)
+  const companyMap: Record<string, any> = {};
+  await Promise.all(
+    companyIds.map(async (cid) => {
+      try {
+        const cdoc = await db.collection("companies").doc(cid).get();
+        if (cdoc.exists) companyMap[cid] = { id: cdoc.id, ...cdoc.data() };
+      } catch (e) {
+        console.error("Error fetching company:", cid, e);
+      }
+    })
+  );
+
+  // Enrich each job with company info and safe defaults
+  const jobs: Job[] = rawJobs.map((j) => {
+    const compFromId = j.companyId ? companyMap[j.companyId] : null;
+    const company = compFromId || j.company || {
+      id: j.companyId || "",
+      name: j.companyName || "",
+      logo: j.companyLogo || "",
+      description: j.companyDescription || "",
+      followers: j.companyFollowers || 0,
+    };
+
+    const applicantCount = j.applicantCount || (Array.isArray(j.applicants) ? j.applicants.length : 0) || 0;
+
+    return {
+      id: j.id,
+      title: j.title || "",
+      location: j.location || "",
+      description: j.description || "",
+      postedDate: j.postedDate || j.createdAt || new Date().toISOString(),
+      company,
+      applicantCount,
+      responsibilities: j.responsibilities || [],
+      requirements: j.requirements || [],
+      benefits: j.benefits || [],
+      ...j,
+    } as Job;
+  });
+
+  return jobs;
 }
 
 export async function getJobById(id: string): Promise<Job | null> {
@@ -381,14 +430,15 @@ export async function applyToJob(
     // 4. Create New Applicant Data
     const newApplicant = {
       userId: user.id,
-      userName: fullName,
+      fullName: fullName,
       email: email,
       phone: phone,
+      resumeUrl: cvLink,
       cvLink: cvLink,
       coverLetter: coverLetter || "",
       appliedAt: new Date().toISOString(),
       status: "pending",
-    };
+    } as Applicant;
 
     // 5. Update Firestore (Add to applicants array & increment count)
     await jobRef.update({
@@ -399,6 +449,7 @@ export async function applyToJob(
 
     // 6. Revalidate Path to update UI immediately
     revalidatePath(`/jobs/${jobId}`);
+    revalidatePath(`/hr/jobs/${jobId}/applicants`);
 
     return { success: true, message: "Application submitted successfully!" };
   } catch (error) {

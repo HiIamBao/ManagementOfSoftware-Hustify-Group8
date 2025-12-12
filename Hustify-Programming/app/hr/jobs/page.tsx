@@ -44,6 +44,9 @@ export default async function HRJobsPage() {
                     Location
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">
+                    Job Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold">
@@ -67,6 +70,11 @@ export default async function HRJobsPage() {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                       {job.location}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                      <span className="capitalize">
+                        {job.jobType?.replace("-", " ") || "N/A"}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <span

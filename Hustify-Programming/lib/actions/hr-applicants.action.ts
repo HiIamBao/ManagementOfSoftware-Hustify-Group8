@@ -44,12 +44,29 @@ export async function getJobApplicants(jobId: string) {
     const enrichedApplicants = await Promise.all(
       applicants.map(async (applicant: Applicant) => {
         const userDoc = await db.collection("users").doc(applicant.userId).get();
-        const userData = userDoc.data();
+        const userData = userDoc.data() as any;
+        const userSafe = userDoc.exists
+          ? {
+              id: userDoc.id,
+              name: userData?.name || "",
+              email: userData?.email || "",
+              image: userData?.image || "",
+              phone: userData?.phone || "",
+              address: userData?.address || "",
+              birthday: userData?.birthday || "",
+              description: userData?.description || "",
+              skills: userData?.skills || [],
+              experiences: userData?.experiences || [],
+              education: userData?.education || [],
+              projects: userData?.projects || [],
+            }
+          : null;
         return {
           ...applicant,
           userName: userData?.name || "Unknown",
           userEmail: userData?.email || "Unknown",
-        };
+          user: userSafe,
+        } as any;
       })
     );
 

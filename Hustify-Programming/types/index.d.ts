@@ -146,6 +146,16 @@ type Applicant = {
   userId: string;
   appliedAt: string;
   status: "pending" | "reviewing" | "interviewed" | "rejected" | "offered";
+  // Application form data
+  fullName?: string;
+  email?: string;
+  phone?: string;
+  coverLetter?: string;
+  resumeUrl?: string;
+  cvLink?: string;
+  answers?: Array<{ question: string; answer: string }>;
+  attachments?: Array<{ name: string; url: string }>;
+  // HR review fields
   rating?: number; // HR can rate applicants (0-5)
   notes?: string; // HR notes about applicant
   updatedAt?: string;
@@ -168,6 +178,7 @@ type Job = {
   postedBy?: string; // User ID of HR who posted
   companyId?: string; // Company ID
   status?: "draft" | "published" | "closed"; // Job status
+  jobType?: "full-time" | "part-time" | "remote";
   viewCount?: number; // Number of views
   createdAt?: string;
   updatedAt?: string;
@@ -223,6 +234,7 @@ export interface CreateJobParams {
   benefits: string[];
   recruitmentUrl?: string;
   status?: "draft" | "published";
+  jobType?: "full-time" | "part-time" | "remote";
 }
 
 export interface UpdateJobParams extends Partial<CreateJobParams> {

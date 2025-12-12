@@ -99,6 +99,12 @@ const JobList = ({ jobs }: JobListProps) => {
                 <span>{new Date(job.postedDate).toLocaleDateString()}</span>
                 <span>•</span>
                 <span>{job.applicantCount || 0} applicants</span>
+                {job.jobType && (
+                  <>
+                    <span>•</span>
+                    <span className="capitalize">{job.jobType.replace("-", " ")}</span>
+                  </>
+                )}
               </div>
               <p className="text-sm text-gray-600 dark:text-white line-clamp-2 mt-1">
                 {job.description}
@@ -141,7 +147,7 @@ const JobList = ({ jobs }: JobListProps) => {
                 )}
               </Button>
               <Button asChild className="btn-secondary" size="sm">
-                <Link href={`/jobs/${job.id}`}>APPLY</Link>
+                <Link href={`/jobs/${job.id}/apply`}>APPLY</Link>
               </Button>
               <Button
                 onClick={() => openJobModal(job)}
@@ -194,6 +200,12 @@ const JobList = ({ jobs }: JobListProps) => {
                 <span>{new Date(job.postedDate).toLocaleDateString()}</span>
                 <span>•</span>
                 <span>{job.applicantCount || 0} applicants</span>
+                {job.jobType && (
+                  <>
+                    <span>•</span>
+                    <span className="capitalize">{job.jobType.replace("-", " ")}</span>
+                  </>
+                )}
               </div>
               <p className="text-sm text-gray-600 dark:text-white line-clamp-2 mt-1">
                 {job.description}
@@ -205,7 +217,7 @@ const JobList = ({ jobs }: JobListProps) => {
                 INTERVIEW
               </Button>
               <Button asChild className="btn-secondary" size="sm">
-                <Link href={`/jobs/${job.id}`}>APPLY</Link>
+                <Link href={`/jobs/${job.id}/apply`}>APPLY</Link>
               </Button>
               <Button
                 onClick={() => openJobModal(job)}
@@ -258,6 +270,12 @@ const JobList = ({ jobs }: JobListProps) => {
                   </span>
                   <span>•</span>
                   <span>{selectedJob?.applicantCount || 0} applicants</span>
+                  {selectedJob?.jobType && (
+                    <>
+                      <span>•</span>
+                      <span className="capitalize">{selectedJob.jobType.replace("-", " ")}</span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

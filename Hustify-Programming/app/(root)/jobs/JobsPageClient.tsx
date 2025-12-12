@@ -19,12 +19,19 @@ export default function JobsPageClient({ jobs }: { jobs: any[] }) {
   // 1. CHUẨN HÓA DỮ LIỆU (Thêm đoạn này để fix lỗi màn hình trắng)
   const safeJobs: Job[] = jobs.map((job) => ({
     ...job,
-    benefits: job.benefits || [], 
+    benefits: job.benefits || [],
     responsibilities: job.responsibilities || [],
     requirements: job.requirements || [],
-    company: job.company || { name: "Unknown", id: "unknown" },
-    applicantCount: job.applicantCount || 0,
-    postedDate: job.postedDate || new Date().toISOString(),
+    company:
+      job.company || {
+        id: job.companyId || "unknown",
+        name: job.companyName || "Unknown Company",
+        logo: (job as any).companyLogo || undefined,
+        description: (job as any).companyDescription || "",
+        followers: (job as any).companyFollowers || 0,
+      },
+    applicantCount: job.applicantCount || (Array.isArray((job as any).applicants) ? (job as any).applicants.length : 0) || 0,
+    postedDate: job.postedDate || (job as any).createdAt || new Date().toISOString(),
   }));
   // 2. States cho bộ lọc mới
   const [searchQuery, setSearchQuery] = useState("");
@@ -41,7 +48,7 @@ export default function JobsPageClient({ jobs }: { jobs: any[] }) {
       locationFilter === "all" ||
       job.location.toLowerCase().includes(locationFilter.toLowerCase());
 
-    const jobType = (job as any).type || ""; 
+    const jobType = job.jobType || "";
     const matchesType =
       typeFilter === "all" ||
       jobType.toLowerCase() === typeFilter.toLowerCase();

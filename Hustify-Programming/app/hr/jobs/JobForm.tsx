@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form } from "@/components/ui/form";
+import { Form, FormField as ShadcnFormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import FormField from "@/components/FormField";
 import { createJob, updateJob } from "@/lib/actions/hr-jobs.action";
@@ -20,6 +21,7 @@ const jobFormSchema = z.object({
   benefits: z.string().optional(),
   recruitmentUrl: z.string().url().optional().or(z.literal("")),
   status: z.enum(["draft", "published"]).default("draft"),
+  jobType: z.enum(["full-time", "part-time", "remote"]).default("full-time"),
 });
 
 type JobFormData = z.infer<typeof jobFormSchema>;
@@ -44,6 +46,7 @@ export default function JobForm({ initialData, jobId }: JobFormProps) {
       benefits: initialData?.benefits?.join("\n") || "",
       recruitmentUrl: initialData?.recruitmentUrl || "",
       status: initialData?.status || "draft",
+      jobType: initialData?.jobType || "full-time",
     },
   });
 
@@ -59,6 +62,7 @@ export default function JobForm({ initialData, jobId }: JobFormProps) {
         benefits: data.benefits ? data.benefits.split("\n").filter(b => b.trim()) : [],
         recruitmentUrl: data.recruitmentUrl || "",
         status: data.status,
+        jobType: data.jobType,
       };
 
       let result;
@@ -100,6 +104,29 @@ export default function JobForm({ initialData, jobId }: JobFormProps) {
             label="Location"
             placeholder="e.g., San Francisco, CA"
             type="text"
+          />
+
+          <ShadcnFormField
+            control={form.control}
+            name="jobType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Job Type</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a job type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="full-time">Full-time</SelectItem>
+                    <SelectItem value="part-time">Part-time</SelectItem>
+                    <SelectItem value="remote">Remote</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
           />
 
           <FormField
