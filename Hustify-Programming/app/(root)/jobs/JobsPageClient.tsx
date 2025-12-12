@@ -48,7 +48,7 @@ export default function JobsPageClient({ jobs }: { jobs: any[] }) {
       locationFilter === "all" ||
       job.location.toLowerCase().includes(locationFilter.toLowerCase());
 
-    const jobType = (job as any).type || ""; 
+    const jobType = job.jobType || "";
     const matchesType =
       typeFilter === "all" ||
       jobType.toLowerCase() === typeFilter.toLowerCase();
