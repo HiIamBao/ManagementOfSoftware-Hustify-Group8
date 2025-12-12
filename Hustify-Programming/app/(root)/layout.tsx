@@ -4,7 +4,7 @@ import { isAuthenticated, getCurrentUser } from "@/lib/actions/auth.action";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-const navLinks = [
+const baseNavLinks = [
   {
     href: "/",
     label: "FEED",
@@ -139,6 +139,35 @@ const Layout = async ({ children }: { children: ReactNode }) => {
   if (!isUserAuthenticated) redirect("/sign-in");
 
   const user = await getCurrentUser();
+
+  // Build nav links, append HR link if user is HR
+  const navLinks = [
+    ...baseNavLinks,
+    ...(user?.userRole === "hr"
+      ? [
+          {
+            href: "/hr/dashboard",
+            label: "HR",
+            icon: (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-6 h-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 7V5a3 3 0 016 0v2M4 9h16v10a2 2 0 01-2 2H6a2 2 0 01-2-2V9z"
+                />
+              </svg>
+            ),
+          },
+        ]
+      : []),
+  ];
 
   return (
     <div className="flex flex-col min-h-screen">
