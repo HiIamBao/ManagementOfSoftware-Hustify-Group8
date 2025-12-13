@@ -62,6 +62,7 @@ export async function signUp(params: SignUpParams) {
       userRole,
       companyId,
       darkmode: false,
+      status: "active",
       // profileURL,
       // resumeURL,
     });
@@ -97,6 +98,19 @@ export async function signIn(params: SignInParams) {
       return {
         success: false,
         message: "User does not exist. Create an account.",
+      };
+
+    const userDoc = await db.collection("users").doc(userRecord.uid).get();
+    if (!userDoc.exists)
+      return {
+        success: false,
+        message: "User does not exist. Create an account.",
+      };
+
+    if (userDoc.data()?.status === "deactivated")
+      return {
+        success: false,
+        message: "Account is deactivated. Please contact support.",
       };
 
     await setSessionCookie(idToken);
