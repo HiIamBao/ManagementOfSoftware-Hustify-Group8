@@ -17,33 +17,55 @@ export async function getAllUsers(params?: {
     const limit = params?.limit || 50;
     
     let query: FirebaseFirestore.Query = db.collection("users");
+    let needsMemoryFilter = false;
     
-    // Apply filters
-    if (params?.role) {
+    if (params?.status === "active") {
+      needsMemoryFilter = true;
+    } else if (params?.status === "deactivated") {
+      query = query.where("status", "==", "deactivated");
+    }
+    
+    if (params?.role && !needsMemoryFilter) {
       query = query.where("userRole", "==", params.role);
     }
-    if (params?.status) {
-      query = query.where("status", "==", params.status);
+    
+    const usersSnapshot = await query.get();
+    
+    let users = usersSnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        userRole: data.userRole || "normal",
+        status: data.status || "active",
+      };
+    }) as User[];
+    
+    if (needsMemoryFilter) {
+      users = users.filter((user) => {
+        if (params?.status === "active") {
+          const userStatus = user.status || "active";
+          if (userStatus !== "active") {
+            return false;
+          }
+        }
+        if (params?.role) {
+          if (user.userRole !== params.role) {
+            return false;
+          }
+        }
+        return true;
+      });
+    } else if (params?.role) {
+      users = users.filter((user) => {
+        return user.userRole === params.role;
+      });
     }
     
-    const usersSnapshot = await query
-      .limit(limit)
-      .get();
-    
-    const users = usersSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as User[];
-    
-    let countQuery: FirebaseFirestore.Query = db.collection("users");
-    if (params?.role) {
-      countQuery = countQuery.where("userRole", "==", params.role);
-    }
-    if (params?.status) {
-      countQuery = countQuery.where("status", "==", params.status);
-    }
-    const totalSnapshot = await countQuery.count().get();
-    const total = totalSnapshot.data().count;
+    const total = users.length;
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    users = users.slice(startIndex, endIndex);
     
     return {
       success: true,

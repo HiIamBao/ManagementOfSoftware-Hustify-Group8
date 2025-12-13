@@ -56,16 +56,19 @@ export async function signUp(params: SignUpParams) {
     }
 
     // save user to db
-    await db.collection("users").doc(uid).set({
+    const userData: any = {
       name,
       email,
       userRole,
-      companyId,
       darkmode: false,
       status: "active",
-      // profileURL,
-      // resumeURL,
-    });
+    };
+    
+    if (companyId) {
+      userData.companyId = companyId;
+    }
+    
+    await db.collection("users").doc(uid).set(userData);
 
     return {
       success: true,
@@ -114,8 +117,13 @@ export async function signIn(params: SignInParams) {
       };
 
     await setSessionCookie(idToken);
+    
+    return {
+      success: true,
+      message: "Signed in successfully",
+    };
   } catch (error: any) {
-    console.log("");
+    console.error("Sign in error:", error);
 
     return {
       success: false,
