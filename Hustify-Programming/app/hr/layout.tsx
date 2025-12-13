@@ -45,6 +45,14 @@ export default async function HRLayout({
                 >
                   Analytics
                 </Link>
+                {user.userRole === 'company-admin' && (
+                  <Link
+                    href="/hr/company/edit"
+                    className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 text-sm font-medium"
+                  >
+                    Company Profile
+                  </Link>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-3">

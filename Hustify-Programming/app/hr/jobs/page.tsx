@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Pencil, CheckCircle2, XCircle, Users, MoreVertical, Trash2 } from "lucide-react";
+import JobActions from "./JobActions";
 
 export default async function HRJobsPage() {
   const user = await getCurrentUser();
@@ -100,65 +101,7 @@ export default async function HRJobsPage() {
                       {new Date(job.createdAt || job.postedDate || Date.now()).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <Button asChild size="sm" variant="outline" className="rounded-full">
-                          <Link href={`/hr/jobs/${job.id}/edit`}>
-                            <Pencil className="h-4 w-4 mr-1" /> Edit
-                          </Link>
-                        </Button>
-                        {job.status === "draft" && (
-                          <form
-                            action={async () => {
-                              "use server";
-                              await publishJob(job.id);
-                            }}
-                          >
-                            <Button type="submit" size="sm" variant="outline" className="rounded-full border-green-200 text-green-700 hover:bg-green-50">
-                              <CheckCircle2 className="h-4 w-4 mr-1" /> Publish
-                            </Button>
-                          </form>
-                        )}
-                        {job.status === "published" && (
-                          <form
-                            action={async () => {
-                              "use server";
-                              await closeJob(job.id);
-                            }}
-                          >
-                            <Button type="submit" size="sm" variant="outline" className="rounded-full border-orange-200 text-orange-700 hover:bg-orange-50">
-                              <XCircle className="h-4 w-4 mr-1" /> Close
-                            </Button>
-                          </form>
-                        )}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button size="icon" variant="ghost" className="h-8 w-8">
-                              <MoreVertical className="h-4 w-4" />
-                              <span className="sr-only">More</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem asChild>
-                              <Link href={`/hr/jobs/${job.id}/applicants`} className="flex items-center gap-2">
-                                <Users className="h-4 w-4" /> View applicants
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem asChild>
-                              <form
-                                action={async () => {
-                                  "use server";
-                                  await deleteJob(job.id);
-                                }}
-                              >
-                                <button type="submit" className="flex w-full items-center gap-2 text-red-600">
-                                  <Trash2 className="h-4 w-4" /> Delete
-                                </button>
-                              </form>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                      <JobActions job={job} />
                     </td>
                   </tr>
                 ))}
