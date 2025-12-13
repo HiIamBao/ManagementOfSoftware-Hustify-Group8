@@ -326,6 +326,32 @@ export async function getAllJobs(): Promise<Job[]> {
   return jobs;
 }
 
+/**
+ * Get all published jobs for a specific company
+ */
+export async function getJobsByCompanyId(companyId: string): Promise<Job[]> {
+  try {
+    const jobsSnapshot = await db
+      .collection("jobs")
+      .where("companyId", "==", companyId)
+      .where("status", "==", "published")
+      .orderBy("createdAt", "desc")
+      .get();
+
+    if (jobsSnapshot.empty) {
+      return [];
+    }
+
+    const jobs = jobsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Job[];
+    return jobs;
+
+  } catch (error) {
+    console.error("Error fetching jobs by company ID:", error);
+    return [];
+  }
+}
+
+
 export async function getJobById(id: string): Promise<Job | null> {
   try {
     const jobDoc = await db.collection("jobs").doc(id).get();
@@ -482,3 +508,6 @@ export async function getUserById(id: string): Promise<User | null> {
     return null;
   }
 }
+
+
+

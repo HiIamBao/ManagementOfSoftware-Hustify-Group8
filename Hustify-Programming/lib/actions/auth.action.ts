@@ -27,7 +27,7 @@ export async function setSessionCookie(idToken: string) {
 }
 
 export async function signUp(params: SignUpParams) {
-  const { uid, name, email, userRole = "normal", companyName } = params;
+  const { uid, name, email, userRole = "normal", companyId } = params;
 
   try {
     // check if user exists in db
@@ -38,21 +38,22 @@ export async function signUp(params: SignUpParams) {
         message: "User already exists. Please sign in.",
       };
 
-    let companyId: string | undefined;
+    // If HR user, associate with an existing company
+    if (userRole === "hr" && companyId) {
+      const companyRef = db.collection("companies").doc(companyId);
+      const companyDoc = await companyRef.get();
 
-    // If HR user, create company
-    if (userRole === "hr" && companyName) {
-      const companyRef = db.collection("companies").doc();
-      companyId = companyRef.id;
+      if (!companyDoc.exists) {
+        return {
+          success: false,
+          message: "Selected company does not exist.",
+        };
+      }
 
-      await companyRef.set({
-        name: companyName,
-        description: "",
-        followers: 0,
-        hrAdmins: [uid],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
+      // Add the new HR user to the company's list of members
+      const companyData = companyDoc.data() as Company;
+      const updatedHrMembers = [...(companyData.hrMembers || []), uid];
+      await companyRef.update({ hrMembers: updatedHrMembers });
     }
 
     // save user to db

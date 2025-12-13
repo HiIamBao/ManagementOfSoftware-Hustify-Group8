@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, Building } from "lucide-react";
 import { signOut } from "@/lib/actions/auth.action";
 
 export default function HRUserMenu({ user }: { user: { id?: string; name?: string; image?: string } }) {
@@ -54,6 +54,12 @@ export default function HRUserMenu({ user }: { user: { id?: string; name?: strin
           <Link href="/user" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             Profile
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/user/following" className="flex items-center gap-2">
+            <Building className="h-4 w-4" />
+            Following
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

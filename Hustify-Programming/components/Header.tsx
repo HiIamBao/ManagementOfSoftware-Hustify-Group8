@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "@/lib/actions/auth.action";
 import { User } from "@/types";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 interface HeaderProps {
   user: User | null;
@@ -94,7 +95,8 @@ const Header = ({ user, navLinks }: HeaderProps) => {
         </div>
 
         {/* User Profile on the right */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-4">
+          {user && <NotificationBell />}
           <div className="flex flex-col items-end">
             <span className="text-sm font-medium">{user?.name || "User"}</span>
             <button
