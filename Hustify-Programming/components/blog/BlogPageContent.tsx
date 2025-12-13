@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { BlogFeed } from './BlogFeed';
-import { SuggestedUsers } from '@/components/SuggestedUsers';
+import { SuggestedConnections } from '@/components/network/SuggestedConnections';
 import { StickyFooter } from './StickyFooter';
 
 interface Post {
@@ -91,7 +91,7 @@ export function BlogPageContent() {
 
   const handleCreatePost = (content: string, location: string, url?: string, photo?: File) => {
     console.log('Creating post with:', { content, location, url, photo });
-    
+
     const newPost: Post = {
       id: `post${posts.length + 1}`,
       author: {
@@ -126,14 +126,14 @@ export function BlogPageContent() {
     setPosts(posts.map(post => {
       if (post.id === postId) {
         const updatedPost = { ...post, content: newContent };
-        
+
         // Handle URL update
         if (url && url.trim()) {
           updatedPost.url = url.trim().startsWith('http') ? url.trim() : `https://${url.trim()}`;
         } else {
           delete updatedPost.url;
         }
-        
+
         return updatedPost;
       }
       return post;
@@ -144,10 +144,7 @@ export function BlogPageContent() {
     setPosts(posts.filter(post => post.id !== postId));
   };
 
-  const handleMessage = (userId: string) => {
-    // In a real app, this would open a chat window or redirect to messages
-    alert(`Opening chat with user ${userId}`);
-  };
+
 
   const handleConnect = (userId: string) => {
     // In a real app, this would send a connection request
@@ -174,9 +171,8 @@ export function BlogPageContent() {
           {/* Sidebar */}
           <div className="lg:col-span-1 flex flex-col h-full">
             <div className="flex-0">
-              <SuggestedUsers
-                users={suggestedUsers}
-                onMessage={handleMessage}
+              <SuggestedConnections
+                suggestions={suggestedUsers}
                 onConnect={handleConnect}
               />
             </div>
