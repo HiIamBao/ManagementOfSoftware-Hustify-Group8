@@ -42,7 +42,8 @@ interface User {
   email: string;
   id: string;
   darkmode: boolean;
-  userRole?: "normal" | "hr" | "company-admin"; // Default: "normal"
+  userRole?: "normal" | "hr" | "admin";
+  status?: "active" | "deactivated";
   companyId?: string; // For HR users, reference to their company
   description?: string;
   skills?: string[];

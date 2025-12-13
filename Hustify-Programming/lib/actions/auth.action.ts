@@ -57,15 +57,19 @@ export async function signUp(params: SignUpParams) {
     }
 
     // save user to db
-    await db.collection("users").doc(uid).set({
+    const userData: any = {
       name,
       email,
       userRole,
-      companyId,
       darkmode: false,
-      // profileURL,
-      // resumeURL,
-    });
+      status: "active",
+    };
+    
+    if (companyId) {
+      userData.companyId = companyId;
+    }
+    
+    await db.collection("users").doc(uid).set(userData);
 
     return {
       success: true,
@@ -100,9 +104,27 @@ export async function signIn(params: SignInParams) {
         message: "User does not exist. Create an account.",
       };
 
+    const userDoc = await db.collection("users").doc(userRecord.uid).get();
+    if (!userDoc.exists)
+      return {
+        success: false,
+        message: "User does not exist. Create an account.",
+      };
+
+    if (userDoc.data()?.status === "deactivated")
+      return {
+        success: false,
+        message: "Account is deactivated. Please contact support.",
+      };
+
     await setSessionCookie(idToken);
+    
+    return {
+      success: true,
+      message: "Signed in successfully",
+    };
   } catch (error: any) {
-    console.log("");
+    console.error("Sign in error:", error);
 
     return {
       success: false,
@@ -152,3 +174,27 @@ export async function isAuthenticated() {
   const user = await getCurrentUser();
   return !!user;
 }
+
+export async function isAdmin(): Promise<boolean> {
+  const user = await getCurrentUser();
+  return user?.userRole === "admin";
+}
+
+export async function requireAdmin(): Promise<User> {
+  const user = await getCurrentUser();
+  
+  if (!user) {
+    throw new Error("Unauthorized: Authentication required");
+  }
+  
+  if (user.userRole !== "admin") {
+    throw new Error("Unauthorized: Admin access required");
+  }
+
+  if (user.status === "deactivated") {
+    throw new Error("Unauthorized: Account is deactivated");
+  }
+  
+  return user;
+}
+
