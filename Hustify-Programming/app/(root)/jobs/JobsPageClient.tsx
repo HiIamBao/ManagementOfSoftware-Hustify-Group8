@@ -34,7 +34,7 @@ export default function JobsPageClient({ jobs }: { jobs: any[] }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [locationFilter, setLocationFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1); // State trang hiện tại
+  const [currentPage, setCurrentPage] = useState(1); 
 
   // Reset về trang 1 khi thay đổi bộ lọc
   useEffect(() => {
@@ -59,14 +59,13 @@ export default function JobsPageClient({ jobs }: { jobs: any[] }) {
     return matchesSearch && matchesLocation && matchesType;
   });
 
-  // 4. Logic Phân Trang (Pagination)
+  // 4. Logic Phân Trang
   const totalPages = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedJobs = filteredJobs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   const uniqueLocations = Array.from(new Set(safeJobs.map((j) => j.location).filter(Boolean)));
 
-  // Hàm xử lý chuyển trang và cuộn lên đầu
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -124,14 +123,10 @@ export default function JobsPageClient({ jobs }: { jobs: any[] }) {
         </Button>
       </div>
 
-      {/* DANH SÁCH KẾT QUẢ (Hiển thị paginatedJobs thay vì filteredJobs) */}
+      {/* DANH SÁCH KẾT QUẢ */}
       <div className="mt-6">
-        <h2 className="text-xl font-semibold mb-4 text-black dark:text-white">
-            Found {filteredJobs.length} jobs 
-            {totalPages > 1 && <span className="text-sm font-normal text-gray-500 ml-2">(Page {currentPage} of {totalPages})</span>}
-        </h2>
+        {/* Đã xóa đoạn thẻ h2 hiển thị chữ Found jobs ở đây */}
         
-        {/* Truyền danh sách đã phân trang vào JobList */}
         <JobList jobs={paginatedJobs} />
         
         {/* UI PHÂN TRANG */}
