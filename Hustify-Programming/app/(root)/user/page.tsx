@@ -5,6 +5,7 @@ import UserExperience from "@/components/UserExperience";
 import UserEducation from "@/components/UserEducation";
 import UserProfileHeader from "@/components/UserProfileHeader";
 import UserProjects from "@/components/UserProjects";
+import CVTools from "@/components/CVTools";
 
 import React from "react";
 
@@ -48,6 +49,10 @@ export default async function UserPage() {
                 </button>
               </div>
             </div>
+          </div>
+          {/* CV Tools Section (Scanner + Compare) */}
+          <div className="mb-6">
+            <CVTools user={user} />
           </div>
           <div className="space-y-2">
             <UserInfoForm user={user} />
