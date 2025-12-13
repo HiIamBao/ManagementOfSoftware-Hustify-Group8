@@ -151,3 +151,27 @@ export async function isAuthenticated() {
   const user = await getCurrentUser();
   return !!user;
 }
+
+export async function isAdmin(): Promise<boolean> {
+  const user = await getCurrentUser();
+  return user?.userRole === "admin";
+}
+
+export async function requireAdmin(): Promise<User> {
+  const user = await getCurrentUser();
+  
+  if (!user) {
+    throw new Error("Unauthorized: Authentication required");
+  }
+  
+  if (user.userRole !== "admin") {
+    throw new Error("Unauthorized: Admin access required");
+  }
+
+  if (user.status === "deactivated") {
+    throw new Error("Unauthorized: Account is deactivated");
+  }
+  
+  return user;
+}
+
