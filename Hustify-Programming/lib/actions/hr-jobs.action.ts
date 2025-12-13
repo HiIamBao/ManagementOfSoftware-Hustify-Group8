@@ -2,7 +2,7 @@
 
 import { db } from "@/firebase/admin";
 import { getCurrentUser } from "./auth.action";
-import { CreateJobParams, UpdateJobParams, Job } from "@/types";
+import { CreateJobParams, UpdateJobParams, Job, Company } from "@/types";
 import { revalidatePath } from "next/cache";
 
 /**
@@ -42,7 +42,6 @@ export async function createJob(params: CreateJobParams) {
       applicantCount: 0,
       viewCount: 0,
       applicants: [],
-      postedDate: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -231,9 +230,45 @@ export async function publishJob(jobId: string) {
     await db.collection("jobs").doc(jobId).update({
       status: "published",
       updatedAt: new Date().toISOString(),
+      postedDate: new Date().toISOString(), // Set postedDate on first publish
     });
 
+    // Re-fetch the job data to ensure it's up-to-date
+    const updatedJobDoc = await db.collection("jobs").doc(jobId).get();
+    const updatedJobData = updatedJobDoc.data();
+
+    // Create notifications for followers
+    if (updatedJobData?.companyId) {
+      console.log(`Job ${jobId} published for company ${updatedJobData.companyId}. Checking for followers...`);
+      const companyRef = db.collection("companies").doc(updatedJobData.companyId);
+      const companyDoc = await companyRef.get();
+      if (companyDoc.exists) {
+        const companyData = companyDoc.data() as Company;
+        const followers = companyData.followers || [];
+        console.log(`Found ${followers.length} followers for company ${companyData.name}.`);
+
+        if (followers.length > 0) {
+          const batch = db.batch();
+          followers.forEach(followerId => {
+            const notificationRef = db.collection("notifications").doc();
+            batch.set(notificationRef, {
+              userId: followerId,
+              message: `${companyData.name} just posted a new job: ${updatedJobData.title}`,
+              link: `/jobs/${jobId}`,
+              isRead: false,
+              createdAt: new Date().toISOString(),
+            });
+          });
+          console.log(`Creating ${followers.length} notifications...`);
+          await batch.commit();
+          console.log("Notifications created successfully.");
+        }
+      }
+    }
+
     revalidatePath("/hr/jobs");
+    revalidatePath(`/jobs/${jobId}`);
+    revalidatePath(`/company/${jobData?.companyId}`);
 
     return {
       success: true,
