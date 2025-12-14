@@ -147,7 +147,7 @@ export function ApplyJobDialog({ jobTitle, jobId, trigger }: ApplyJobDialogProps
               name="cvLink"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>CV Link (PDF/Drive)</FormLabel>
+                  <FormLabel>CV Link (PDF via public link)</FormLabel>
                   <FormControl>
                     <Input placeholder="https://drive.google.com/..." {...field} />
                   </FormControl>
