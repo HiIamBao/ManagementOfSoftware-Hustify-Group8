@@ -43,6 +43,8 @@ interface User {
   id: string;
   darkmode: boolean;
   description?: string;
+  userRole?: "normal" | "hr" | "admin";
+  status?: "active" | "deactivated";
   skills?: string[];
   experiences?: string[];
   education?: Array<{

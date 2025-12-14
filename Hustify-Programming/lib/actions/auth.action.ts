@@ -27,7 +27,7 @@ export async function setSessionCookie(idToken: string) {
 }
 
 export async function signUp(params: SignUpParams) {
-  const { uid, name, email } = params;
+  const { uid, name, email, userRole = "normal", companyId } = params;
 
   try {
     // check if user exists in db
@@ -38,13 +38,38 @@ export async function signUp(params: SignUpParams) {
         message: "User already exists. Please sign in.",
       };
 
+    // If HR user, associate with an existing company
+    if (userRole === "hr" && companyId) {
+      const companyRef = db.collection("companies").doc(companyId);
+      const companyDoc = await companyRef.get();
+
+      if (!companyDoc.exists) {
+        return {
+          success: false,
+          message: "Selected company does not exist.",
+        };
+      }
+
+      // Add the new HR user to the company's list of members
+      const companyData = companyDoc.data() as Company;
+      const updatedHrMembers = [...(companyData.hrMembers || []), uid];
+      await companyRef.update({ hrMembers: updatedHrMembers });
+    }
+
     // save user to db
-    await db.collection("users").doc(uid).set({
+    const userData: any = {
       name,
       email,
-      // profileURL,
-      // resumeURL,
-    });
+      userRole,
+      darkmode: false,
+      status: "active",
+    };
+    
+    if (companyId) {
+      userData.companyId = companyId;
+    }
+    
+    await db.collection("users").doc(uid).set(userData);
 
     return {
       success: true,
@@ -79,9 +104,27 @@ export async function signIn(params: SignInParams) {
         message: "User does not exist. Create an account.",
       };
 
+    const userDoc = await db.collection("users").doc(userRecord.uid).get();
+    if (!userDoc.exists)
+      return {
+        success: false,
+        message: "User does not exist. Create an account.",
+      };
+
+    if (userDoc.data()?.status === "deactivated")
+      return {
+        success: false,
+        message: "Account is deactivated. Please contact support.",
+      };
+
     await setSessionCookie(idToken);
+    
+    return {
+      success: true,
+      message: "Signed in successfully",
+    };
   } catch (error: any) {
-    console.log("");
+    console.error("Sign in error:", error);
 
     return {
       success: false,
@@ -131,3 +174,27 @@ export async function isAuthenticated() {
   const user = await getCurrentUser();
   return !!user;
 }
+
+export async function isAdmin(): Promise<boolean> {
+  const user = await getCurrentUser();
+  return user?.userRole === "admin";
+}
+
+export async function requireAdmin(): Promise<User> {
+  const user = await getCurrentUser();
+  
+  if (!user) {
+    throw new Error("Unauthorized: Authentication required");
+  }
+  
+  if (user.userRole !== "admin") {
+    throw new Error("Unauthorized: Admin access required");
+  }
+
+  if (user.status === "deactivated") {
+    throw new Error("Unauthorized: Account is deactivated");
+  }
+  
+  return user;
+}
+
