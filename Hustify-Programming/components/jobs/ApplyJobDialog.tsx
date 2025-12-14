@@ -134,7 +134,7 @@ export function ApplyJobDialog({ jobTitle, jobId, trigger }: ApplyJobDialogProps
                   <FormItem>
                     <FormLabel>Phone Number</FormLabel>
                     <FormControl>
-                      <Input placeholder="+1 234 567 890" {...field} />
+                      <Input placeholder="+84 234 567 890" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
