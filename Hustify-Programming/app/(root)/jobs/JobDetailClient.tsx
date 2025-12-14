@@ -135,12 +135,6 @@ export default function JobDetailClient({ job }: { job: Job }) {
               </button>
             }
           />
-          <Link
-            href={`/jobs/${job.id}/apply`}
-            className="btn-secondary flex items-center justify-center"
-          >
-            QUICK APPLY
-          </Link>
 
           <Link
             href="/jobs"
