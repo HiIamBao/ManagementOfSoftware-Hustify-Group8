@@ -1,4 +1,4 @@
-                                                            "use client";
+"use client";
 
 import { useState } from "react";
 import Image from "next/image";
@@ -59,6 +59,7 @@ const JobList = ({ jobs }: JobListProps) => {
   return (
     <>
       <div className="flex flex-col space-y-4">
+        {/* Phần tiêu đề JOBS FOR YOU - Nếu muốn bỏ luôn dòng này để giao diện sạch hơn, bạn có thể xóa khối div này */}
         <div className="flex items-center justify-center space-x-4 mb-8 mt-4">
           <div className="h-px bg-gray-300 flex-1"></div>
           <h2 className="text-center font-medium text-black dark:text-white text-sm px-2">
@@ -67,6 +68,7 @@ const JobList = ({ jobs }: JobListProps) => {
           <div className="h-px bg-gray-300 flex-1"></div>
         </div>
 
+        {/* Danh sách Job chính */}
         {jobs.map((job) => (
           <div
             key={job.id}
@@ -159,76 +161,8 @@ const JobList = ({ jobs }: JobListProps) => {
             </div>
           </div>
         ))}
-
-        <div className="flex items-center justify-center space-x-4 mb-8 mt-8">
-          <div className="h-px bg-gray-300 flex-1"></div>
-          <h2 className="text-center font-medium text-black dark:text-white text-sm px-2">
-            NEW JOBS
-          </h2>
-          <div className="h-px bg-gray-300 flex-1"></div>
-        </div>
-
-        {jobs.slice(0, 2).map((job) => (
-          <div
-            key={`new-${job.id}`}
-            className="p-4 bg-white dark:bg-gradient-to-b from-[#1A1C20] to-[#08090D] rounded-lg border border-gray-100 shadow-sm flex items-start relative"
-          >
-            <div className="mr-4">
-              <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-                {job.company?.logo ? (
-                  <Image
-                    src={job.company.logo}
-                    alt={job.company.name}
-                    width={48}
-                    height={48}
-                    className="object-cover"
-                  />
-                ) : (
-                  <span className="text-xl font-bold text-gray-400">
-                    {job.company?.name?.charAt(0) || "J"}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div className="flex-1">
-              <h3 className="font-bold text-lg">{job.title}</h3>
-              <p className="text-sm text-gray-600 dark:text-white">
-                {job.company?.name} · {job.location}
-              </p>
-              <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
-                <span>{new Date(job.postedDate).toLocaleDateString()}</span>
-                <span>•</span>
-                <span>{job.applicantCount || 0} applicants</span>
-                {job.jobType && (
-                  <>
-                    <span>•</span>
-                    <span className="capitalize">{job.jobType.replace("-", " ")}</span>
-                  </>
-                )}
-              </div>
-              <p className="text-sm text-gray-600 dark:text-white line-clamp-2 mt-1">
-                {job.description}
-              </p>
-            </div>
-
-            <div className="absolute right-4 top-1/3 -translate-y-1/2 flex flex-row gap-2">
-              <Button className="btn-third" size="sm">
-                INTERVIEW
-              </Button>
-              <Button asChild className="btn-secondary" size="sm">
-                <Link href={`/jobs/${job.id}/apply`}>APPLY</Link>
-              </Button>
-              <Button
-                onClick={() => openJobModal(job)}
-                className="btn-primary"
-                size="sm"
-              >
-                MORE
-              </Button>
-            </div>
-          </div>
-        ))}
+        
+        {/* ĐÃ XÓA PHẦN NEW JOBS Ở ĐÂY */}
       </div>
 
       {/* Job Description Modal */}
