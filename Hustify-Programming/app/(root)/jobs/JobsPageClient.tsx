@@ -1,8 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -14,9 +14,12 @@ import {
 import JobList from "./JobList";
 import { Job } from "@/types";
 
+// Số lượng job hiển thị trên mỗi trang
+const ITEMS_PER_PAGE = 5;
+
 export default function JobsPageClient({ jobs }: { jobs: any[] }) {
   
-  // 1. CHUẨN HÓA DỮ LIỆU (Thêm đoạn này để fix lỗi màn hình trắng)
+  // 1. CHUẨN HÓA DỮ LIỆU
   const safeJobs: Job[] = jobs.map((job) => ({
     ...job,
     benefits: job.benefits || [],
@@ -33,12 +36,19 @@ export default function JobsPageClient({ jobs }: { jobs: any[] }) {
     applicantCount: job.applicantCount || (Array.isArray((job as any).applicants) ? (job as any).applicants.length : 0) || 0,
     postedDate: job.postedDate || (job as any).createdAt || new Date().toISOString(),
   }));
-  // 2. States cho bộ lọc mới
+
+  // 2. States cho bộ lọc và phân trang
   const [searchQuery, setSearchQuery] = useState("");
   const [locationFilter, setLocationFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1); 
 
-  // 3. Logic Lọc Nâng Cao (Search + Location + Type)
+  // Reset về trang 1 khi thay đổi bộ lọc
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, locationFilter, typeFilter]);
+
+  // 3. Logic Lọc Nâng Cao
   const filteredJobs = safeJobs.filter((job) => {
     const matchesSearch =
       job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -56,11 +66,21 @@ export default function JobsPageClient({ jobs }: { jobs: any[] }) {
     return matchesSearch && matchesLocation && matchesType;
   });
 
+  // 4. Logic Phân Trang
+  const totalPages = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedJobs = filteredJobs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   const uniqueLocations = Array.from(new Set(safeJobs.map((j) => j.location).filter(Boolean)));
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <div className="w-full max-w-7xl mx-auto p-4 space-y-6">
-      {/* THANH SEARCH & FILTER MỚI */}
+      {/* THANH SEARCH & FILTER */}
       <div className="bg-white dark:bg-[#1A1C20] p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 space-y-4 md:space-y-0 md:flex md:gap-4 items-end">
         
         {/* Input Search */}
@@ -112,8 +132,38 @@ export default function JobsPageClient({ jobs }: { jobs: any[] }) {
 
       {/* DANH SÁCH KẾT QUẢ */}
       <div className="mt-6">
-        <h2 className="text-xl font-semibold mb-4 text-black dark:text-white">Found {filteredJobs.length} jobs</h2>
-        <JobList jobs={filteredJobs} />
+        {/* Đã xóa đoạn thẻ h2 hiển thị chữ Found jobs ở đây */}
+        
+        <JobList jobs={paginatedJobs} />
+        
+        {/* UI PHÂN TRANG */}
+        {totalPages > 1 && (
+            <div className="flex items-center justify-center space-x-2 mt-8 py-4">
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="flex items-center gap-1"
+            >
+                <ChevronLeft className="h-4 w-4" /> Previous
+            </Button>
+            
+            <div className="text-sm font-medium mx-4">
+                Page {currentPage} of {totalPages}
+            </div>
+
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="flex items-center gap-1"
+            >
+                Next <ChevronRight className="h-4 w-4" />
+            </Button>
+            </div>
+        )}
       </div>
     </div>
   );
