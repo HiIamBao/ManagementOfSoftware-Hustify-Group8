@@ -7,12 +7,9 @@ import OtherUserEducation from "@/components/otheruser/OtherUserEducation";
 import OtherUserProjects from "@/components/otheruser/OtherUserProjects";
 import React from "react";
 
-interface UserPageProps {
-  params: { id: string };
-}
-
-export default async function OtherUserPage({ params }: UserPageProps) {
-  const user = await getUserById(params.id);
+export default async function OtherUserPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const user = await getUserById(id);
 
   if (!user) {
     return <div className="p-8">User not found.</div>;

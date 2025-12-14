@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     const feedbackStr = JSON.stringify(feedback, null, 2);
 
     const { text: roadmapRaw } = await generateText({
-      model: google("gemini-2.0-flash-001"),
+      model: google("gemini-2.5-flash"),
       prompt: `You're an expert career advisor and technical trainer. 
 Generate a structured learning roadmap based on this interview and feedback data. 
 Focus on the feedback and generate a roadmap that can help the user improve their skills and weaknesses regarding to the interview.
