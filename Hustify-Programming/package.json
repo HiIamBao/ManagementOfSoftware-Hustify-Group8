@@ -33,7 +33,7 @@
     "firebase-admin": "^13.2.0",
     "framer-motion": "^12.15.0",
     "lucide-react": "0.263.1",
-    "mermaid": "^11.6.0",
+    "mermaid": "^11.12.2",
     "next": "15.2.2",
     "next-themes": "^0.4.6",
     "react": "^18.2.0",
