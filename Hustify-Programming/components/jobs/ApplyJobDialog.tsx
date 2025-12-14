@@ -147,10 +147,16 @@ export function ApplyJobDialog({ jobTitle, jobId, trigger }: ApplyJobDialogProps
               name="cvLink"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>CV Link (PDF via public link)</FormLabel>
+                  <FormLabel>CV / Resume</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://drive.google.com/..." {...field} />
+                    <Input
+                      placeholder="Public PDF link (Google Drive, Dropbox…)"
+                      {...field}
+                    />
                   </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    PDF file shared via a public link
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}
