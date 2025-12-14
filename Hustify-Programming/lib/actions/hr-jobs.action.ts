@@ -4,6 +4,7 @@ import { db } from "@/firebase/admin";
 import { getCurrentUser } from "./auth.action";
 import { CreateJobParams, UpdateJobParams, Job, Company } from "@/types";
 import { revalidatePath } from "next/cache";
+import { sendBulkJobNotificationEmails } from "@/lib/services/email.service";
 
 /**
  * Create a new job posting
@@ -248,6 +249,30 @@ export async function publishJob(jobId: string) {
         console.log(`Found ${followers.length} followers for company ${companyData.name}.`);
 
         if (followers.length > 0) {
+          // Fetch follower details for email sending
+          const followerDetails: Array<{ id: string; email: string; name: string }> = [];
+          
+          // Batch fetch user data
+          const userSnapshots = await Promise.all(
+            followers.map(followerId => 
+              db.collection("users").doc(followerId).get()
+            )
+          );
+
+          userSnapshots.forEach((snapshot, index) => {
+            if (snapshot.exists) {
+              const userData = snapshot.data();
+              if (userData?.email) {
+                followerDetails.push({
+                  id: followers[index],
+                  email: userData.email,
+                  name: userData.name || "User",
+                });
+              }
+            }
+          });
+
+          // Create in-app notifications
           const batch = db.batch();
           followers.forEach(followerId => {
             const notificationRef = db.collection("notifications").doc();
@@ -259,9 +284,29 @@ export async function publishJob(jobId: string) {
               createdAt: new Date().toISOString(),
             });
           });
-          console.log(`Creating ${followers.length} notifications...`);
+          console.log(`Creating ${followers.length} in-app notifications...`);
           await batch.commit();
-          console.log("Notifications created successfully.");
+          console.log("In-app notifications created successfully.");
+
+          // Send email notifications (async, don't block the response)
+          if (followerDetails.length > 0) {
+            console.log(`Sending email notifications to ${followerDetails.length} followers...`);
+            
+            // Fire and forget - don't await to avoid blocking
+            sendBulkJobNotificationEmails(
+              followerDetails.map(f => ({ email: f.email, name: f.name })),
+              {
+                companyName: companyData.name,
+                jobTitle: updatedJobData.title,
+                jobId: jobId,
+                jobLocation: updatedJobData.location,
+              }
+            ).then(result => {
+              console.log(`[Email] Notification results: ${result.totalSent} sent, ${result.totalFailed} failed`);
+            }).catch(error => {
+              console.error("[Email] Error sending notifications:", error);
+            });
+          }
         }
       }
     }
