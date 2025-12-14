@@ -9,6 +9,7 @@ export async function getAllUsers(params?: {
   limit?: number;
   role?: "normal" | "hr" | "admin";
   status?: "active" | "deactivated";
+  search?: string;
 }) {
   try {
     await requireAdmin();
@@ -59,6 +60,16 @@ export async function getAllUsers(params?: {
     } else if (params?.role) {
       users = users.filter((user) => {
         return user.userRole === params.role;
+      });
+    }
+    
+    // Apply search filter if provided
+    if (params?.search && params.search.trim()) {
+      const searchTerm = params.search.toLowerCase().trim();
+      users = users.filter((user) => {
+        const name = (user.name || "").toLowerCase();
+        const email = (user.email || "").toLowerCase();
+        return name.includes(searchTerm) || email.includes(searchTerm);
       });
     }
     
@@ -155,4 +166,23 @@ export async function deactivateUser(userId: string) {
 
 export async function reactivateUser(userId: string) {
   return updateUserStatus(userId, "active");
+}
+
+export async function getUsersByTypeAdmin() {
+  try {
+    await requireAdmin();
+    const snapshot = await db.collection("users").get();
+    const map: Record<string, number> = {};
+    snapshot.forEach((doc) => {
+      const data: any = doc.data();
+      const role = (data?.userRole || "normal").toString().toLowerCase();
+      map[role] = (map[role] || 0) + 1;
+    });
+    const items = Object.keys(map).map((k) => ({ type: k, count: map[k] }));
+    // Sort by count desc
+    items.sort((a, b) => b.count - a.count);
+    return { success: true, items };
+  } catch (error: any) {
+    return { success: false, message: error.message || "Failed to get users by type" };
+  }
 }

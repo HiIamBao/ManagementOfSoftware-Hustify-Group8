@@ -1,15 +1,16 @@
 import { getCurrentUser } from "@/lib/actions/auth.action";
 import { redirect } from "next/navigation";
-import { getAllUsers } from "@/lib/actions/admin-users.action";
+import { getAllUsers, getUsersByTypeAdmin } from "@/lib/actions/admin-users.action";
 import { getAllBlogPosts, getBlogPostsStats } from "@/lib/actions/admin-blogs.action";
 import { getTopJobs, getJobsStatsAdmin, getJobsByTypeAdmin } from "@/lib/actions/admin-jobs.action";
 import { getTopInterviewTopics } from "@/lib/actions/admin-interviews.action";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Users, FileText, TrendingUp, AlertCircle, Briefcase, Mic } from "lucide-react";
+import { Users, FileText, TrendingUp, Briefcase, Mic } from "lucide-react";
 import TopJobsChart from "./TopJobsChart";
 import TopInterviewTopicsChart from "./TopInterviewTopicsChart";
 import JobsByTypeChart from "./JobsByTypeChart";
+import UsersByTypeChart from "./UsersByTypeChart";
 
 export default async function AdminDashboardPage() {
   const user = await getCurrentUser();
@@ -19,7 +20,7 @@ export default async function AdminDashboardPage() {
   }
 
   // Fetch statistics and top charts data
-  const [usersResult, blogsResult, statsResult, topJobsRes, topTopicsRes, jobsStatsRes, jobsByTypeRes] = await Promise.all([
+  const [usersResult, blogsResult, statsResult, topJobsRes, topTopicsRes, jobsStatsRes, jobsByTypeRes, usersByTypeRes] = await Promise.all([
     getAllUsers({ page: 1, limit: 1 }),
     getAllBlogPosts({ page: 1, limit: 1 }),
     getBlogPostsStats(),
@@ -27,6 +28,7 @@ export default async function AdminDashboardPage() {
     getTopInterviewTopics(5),
     getJobsStatsAdmin(),
     getJobsByTypeAdmin(),
+    getUsersByTypeAdmin(),
   ]);
 
   const totalUsers = usersResult.success && usersResult.pagination ? usersResult.pagination.total : 0;
@@ -35,6 +37,7 @@ export default async function AdminDashboardPage() {
 
   const jobsTotals = (jobsStatsRes as any)?.success ? (jobsStatsRes as any).totals : null;
   const jobsByType = (jobsByTypeRes as any)?.success ? (jobsByTypeRes as any).items : [];
+  const usersByType = (usersByTypeRes as any)?.success ? (usersByTypeRes as any).items : [];
 
   const totalBlogPosts = blogsResult.success && blogsResult.pagination ? blogsResult.pagination.total : 0;
   const blogStats = statsResult.success ? statsResult.stats : null;
@@ -64,11 +67,6 @@ export default async function AdminDashboardPage() {
               <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
-          <Link href="/admin/users">
-            <Button variant="link" className="p-0 mt-4 text-sm">
-              View all users →
-            </Button>
-          </Link>
         </div>
 
         {/* Total Blog Posts */}
@@ -165,22 +163,43 @@ export default async function AdminDashboardPage() {
 
 
 
-      {/* Jobs by Type */}
-      <div className="bg-white dark:bg-[#121212] p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Briefcase className="h-5 w-5" />
-            <h2 className="text-lg font-semibold">Jobs by Type</h2>
+      {/* Users by Type and Jobs by Type */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Users by Type */}
+        <div className="bg-white dark:bg-[#121212] p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              <h2 className="text-lg font-semibold">Users by Type</h2>
+            </div>
+            <Link href="/admin/users">
+              <Button variant="link" className="p-0">Manage Users →</Button>
+            </Link>
           </div>
-          <Link href="/admin/jobs">
-            <Button variant="link" className="p-0">Manage Jobs →</Button>
-          </Link>
+          {usersByType.length ? (
+            <UsersByTypeChart data={usersByType as any} />
+          ) : (
+            <p className="text-sm text-gray-600 dark:text-gray-400">No user type data</p>
+          )}
         </div>
-        {jobsByType.length ? (
-          <JobsByTypeChart data={jobsByType as any} />
-        ) : (
-          <p className="text-sm text-gray-600 dark:text-gray-400">No job type data</p>
-        )}
+
+        {/* Jobs by Type */}
+        <div className="bg-white dark:bg-[#121212] p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Briefcase className="h-5 w-5" />
+              <h2 className="text-lg font-semibold">Jobs by Type</h2>
+            </div>
+            <Link href="/admin/jobs">
+              <Button variant="link" className="p-0">Manage Jobs →</Button>
+            </Link>
+          </div>
+          {jobsByType.length ? (
+            <JobsByTypeChart data={jobsByType as any} />
+          ) : (
+            <p className="text-sm text-gray-600 dark:text-gray-400">No job type data</p>
+          )}
+        </div>
       </div>
 
       {/* Analytics */}
@@ -222,42 +241,6 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white dark:bg-[#121212] p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
-        <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
-        <div className="flex flex-wrap gap-4">
-          <Link href="/admin/users">
-            <Button variant="outline">
-              <Users className="h-4 w-4 mr-2" />
-              Manage Users
-            </Button>
-          </Link>
-          <Link href="/admin/blogs">
-            <Button variant="outline">
-              <FileText className="h-4 w-4 mr-2" />
-              Manage Blog Posts
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      {/* System Status */}
-      <div className="bg-white dark:bg-[#121212] p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
-        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <AlertCircle className="h-5 w-5" />
-          System Status
-        </h2>
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600 dark:text-gray-400">Database</span>
-            <span className="text-green-600 dark:text-green-400 font-medium">Connected</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600 dark:text-gray-400">Authentication</span>
-            <span className="text-green-600 dark:text-green-400 font-medium">Active</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
