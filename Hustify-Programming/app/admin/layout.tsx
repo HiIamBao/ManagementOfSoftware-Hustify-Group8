@@ -2,7 +2,7 @@ import { getCurrentUser } from "@/lib/actions/auth.action";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Shield, LayoutDashboard, Users, FileText, LogOut, Home } from "lucide-react";
+import { Shield, LayoutDashboard, Users, FileText, LogOut, Home, Briefcase, Mic } from "lucide-react";
 import { signOut } from "@/lib/actions/auth.action";
 
 export default async function AdminLayout({
@@ -42,6 +42,20 @@ export default async function AdminLayout({
                 >
                   <Users className="h-4 w-4" />
                   Users
+                </Link>
+                <Link
+                  href="/admin/jobs"
+                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 text-sm font-medium flex items-center gap-2"
+                >
+                  <Briefcase className="h-4 w-4" />
+                  Jobs
+                </Link>
+                <Link
+                  href="/admin/interviews"
+                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 text-sm font-medium flex items-center gap-2"
+                >
+                  <Mic className="h-4 w-4" />
+                  Interviews
                 </Link>
                 <Link
                   href="/admin/blogs"

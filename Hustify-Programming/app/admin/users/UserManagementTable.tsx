@@ -40,12 +40,18 @@ interface UserManagementTableProps {
     totalPages: number;
   };
   currentPage: number;
+  role?: "normal" | "hr" | "admin";
+  status?: "active" | "deactivated";
+  search?: string;
 }
 
 export default function UserManagementTable({
   users,
   pagination,
   currentPage,
+  role,
+  status,
+  search,
 }: UserManagementTableProps) {
   const router = useRouter();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -111,6 +117,15 @@ export default function UserManagementTable({
       return <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Deactivated</Badge>;
     }
     return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Active</Badge>;
+  };
+
+  const buildPaginationUrl = (page: number) => {
+    const params = new URLSearchParams();
+    params.set("page", page.toString());
+    if (role) params.set("role", role);
+    if (status) params.set("status", status);
+    if (search) params.set("search", search);
+    return `/admin/users?${params.toString()}`;
   };
 
   return (
@@ -208,12 +223,12 @@ export default function UserManagementTable({
             </div>
             <div className="flex gap-2">
               {currentPage > 1 && (
-                <Link href={`/admin/users?page=${currentPage - 1}`}>
+                <Link href={buildPaginationUrl(currentPage - 1)}>
                   <Button variant="outline" size="sm">Previous</Button>
                 </Link>
               )}
               {currentPage < pagination.totalPages && (
-                <Link href={`/admin/users?page=${currentPage + 1}`}>
+                <Link href={buildPaginationUrl(currentPage + 1)}>
                   <Button variant="outline" size="sm">Next</Button>
                 </Link>
               )}

@@ -1,10 +1,16 @@
 import { getCurrentUser } from "@/lib/actions/auth.action";
 import { redirect } from "next/navigation";
-import { getAllUsers } from "@/lib/actions/admin-users.action";
+import { getAllUsers, getUsersByTypeAdmin } from "@/lib/actions/admin-users.action";
 import { getAllBlogPosts, getBlogPostsStats } from "@/lib/actions/admin-blogs.action";
+import { getTopJobs, getJobsStatsAdmin, getJobsByTypeAdmin } from "@/lib/actions/admin-jobs.action";
+import { getTopInterviewTopics } from "@/lib/actions/admin-interviews.action";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Users, FileText, TrendingUp, AlertCircle } from "lucide-react";
+import { Users, FileText, TrendingUp, Briefcase, Mic } from "lucide-react";
+import TopJobsChart from "./TopJobsChart";
+import TopInterviewTopicsChart from "./TopInterviewTopicsChart";
+import JobsByTypeChart from "./JobsByTypeChart";
+import UsersByTypeChart from "./UsersByTypeChart";
 
 export default async function AdminDashboardPage() {
   const user = await getCurrentUser();
@@ -13,14 +19,26 @@ export default async function AdminDashboardPage() {
     redirect("/");
   }
 
-  // Fetch statistics
-  const [usersResult, blogsResult, statsResult] = await Promise.all([
+  // Fetch statistics and top charts data
+  const [usersResult, blogsResult, statsResult, topJobsRes, topTopicsRes, jobsStatsRes, jobsByTypeRes, usersByTypeRes] = await Promise.all([
     getAllUsers({ page: 1, limit: 1 }),
     getAllBlogPosts({ page: 1, limit: 1 }),
     getBlogPostsStats(),
+    getTopJobs({ limit: 5 }),
+    getTopInterviewTopics(5),
+    getJobsStatsAdmin(),
+    getJobsByTypeAdmin(),
+    getUsersByTypeAdmin(),
   ]);
 
   const totalUsers = usersResult.success && usersResult.pagination ? usersResult.pagination.total : 0;
+  const topJobs = (topJobsRes as any)?.success ? (topJobsRes as any).items : [];
+  const topTopics = (topTopicsRes as any)?.success ? (topTopicsRes as any).items : [];
+
+  const jobsTotals = (jobsStatsRes as any)?.success ? (jobsStatsRes as any).totals : null;
+  const jobsByType = (jobsByTypeRes as any)?.success ? (jobsByTypeRes as any).items : [];
+  const usersByType = (usersByTypeRes as any)?.success ? (usersByTypeRes as any).items : [];
+
   const totalBlogPosts = blogsResult.success && blogsResult.pagination ? blogsResult.pagination.total : 0;
   const blogStats = statsResult.success ? statsResult.stats : null;
 
@@ -49,11 +67,6 @@ export default async function AdminDashboardPage() {
               <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
-          <Link href="/admin/users">
-            <Button variant="link" className="p-0 mt-4 text-sm">
-              View all users →
-            </Button>
-          </Link>
         </div>
 
         {/* Total Blog Posts */}
@@ -111,42 +124,123 @@ export default async function AdminDashboardPage() {
         )}
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white dark:bg-[#121212] p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
-        <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
-        <div className="flex flex-wrap gap-4">
-          <Link href="/admin/users">
-            <Button variant="outline">
-              <Users className="h-4 w-4 mr-2" />
-              Manage Users
-            </Button>
-          </Link>
-          <Link href="/admin/blogs">
-            <Button variant="outline">
-              <FileText className="h-4 w-4 mr-2" />
-              Manage Blog Posts
-            </Button>
-          </Link>
+      {/* Jobs System Snapshot */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white dark:bg-[#121212] p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Jobs</p>
+              <p className="text-3xl font-bold">{jobsTotals?.totalJobs ?? 0}</p>
+            </div>
+            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+              <Briefcase className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white dark:bg-[#121212] p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Applicants</p>
+              <p className="text-3xl font-bold">{jobsTotals?.totalApplicants ?? 0}</p>
+            </div>
+            <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+              <Users className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white dark:bg-[#121212] p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Avg Applicants / Job</p>
+              <p className="text-3xl font-bold">{jobsTotals?.avgApplicantsPerJob ?? 0}</p>
+            </div>
+            <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+              <TrendingUp className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* System Status */}
-      <div className="bg-white dark:bg-[#121212] p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
-        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <AlertCircle className="h-5 w-5" />
-          System Status
-        </h2>
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600 dark:text-gray-400">Database</span>
-            <span className="text-green-600 dark:text-green-400 font-medium">Connected</span>
+
+
+      {/* Users by Type and Jobs by Type */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Users by Type */}
+        <div className="bg-white dark:bg-[#121212] p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              <h2 className="text-lg font-semibold">Users by Type</h2>
+            </div>
+            <Link href="/admin/users">
+              <Button variant="link" className="p-0">Manage Users →</Button>
+            </Link>
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600 dark:text-gray-400">Authentication</span>
-            <span className="text-green-600 dark:text-green-400 font-medium">Active</span>
+          {usersByType.length ? (
+            <UsersByTypeChart data={usersByType as any} />
+          ) : (
+            <p className="text-sm text-gray-600 dark:text-gray-400">No user type data</p>
+          )}
+        </div>
+
+        {/* Jobs by Type */}
+        <div className="bg-white dark:bg-[#121212] p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Briefcase className="h-5 w-5" />
+              <h2 className="text-lg font-semibold">Jobs by Type</h2>
+            </div>
+            <Link href="/admin/jobs">
+              <Button variant="link" className="p-0">Manage Jobs →</Button>
+            </Link>
           </div>
+          {jobsByType.length ? (
+            <JobsByTypeChart data={jobsByType as any} />
+          ) : (
+            <p className="text-sm text-gray-600 dark:text-gray-400">No job type data</p>
+          )}
         </div>
       </div>
+
+      {/* Analytics */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Top Jobs by Applicants */}
+        <div className="bg-white dark:bg-[#121212] p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Briefcase className="h-5 w-5" />
+              <h2 className="text-lg font-semibold">Top Jobs by Applicants</h2>
+            </div>
+            <Link href="/admin/jobs">
+              <Button variant="link" className="p-0">Manage Jobs →</Button>
+            </Link>
+          </div>
+          {topJobs.length ? (
+            <TopJobsChart data={topJobs} />
+          ) : (
+            <p className="text-sm text-gray-600 dark:text-gray-400">No job data available</p>
+          )}
+        </div>
+
+        {/* Top Interview Topics */}
+        <div className="bg-white dark:bg-[#121212] p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Mic className="h-5 w-5" />
+              <h2 className="text-lg font-semibold">Top Interview Topics</h2>
+            </div>
+            <Link href="/admin/interviews">
+              <Button variant="link" className="p-0">Manage Interviews →</Button>
+            </Link>
+          </div>
+          {topTopics.length ? (
+            <TopInterviewTopicsChart data={topTopics} />
+          ) : (
+            <p className="text-sm text-gray-600 dark:text-gray-400">No interview data available</p>
+          )}
+        </div>
+      </div>
+
     </div>
   );
 }
