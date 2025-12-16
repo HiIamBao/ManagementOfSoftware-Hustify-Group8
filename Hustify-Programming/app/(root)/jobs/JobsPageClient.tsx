@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -18,7 +18,7 @@ import { Job } from "@/types";
 const ITEMS_PER_PAGE = 5;
 
 export default function JobsPageClient({ jobs }: { jobs: any[] }) {
-  
+
   // 1. CHUẨN HÓA DỮ LIỆU
   const safeJobs: Job[] = jobs.map((job) => ({
     ...job,
@@ -41,7 +41,7 @@ export default function JobsPageClient({ jobs }: { jobs: any[] }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [locationFilter, setLocationFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1); 
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Reset về trang 1 khi thay đổi bộ lọc
   useEffect(() => {
@@ -82,7 +82,7 @@ export default function JobsPageClient({ jobs }: { jobs: any[] }) {
     <div className="w-full max-w-7xl mx-auto p-4 space-y-6">
       {/* THANH SEARCH & FILTER */}
       <div className="bg-white dark:bg-[#1A1C20] p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 space-y-4 md:space-y-0 md:flex md:gap-4 items-end">
-        
+
         {/* Input Search */}
         <div className="flex-1 space-y-2">
           <label className="text-sm font-medium">Search</label>
@@ -124,45 +124,55 @@ export default function JobsPageClient({ jobs }: { jobs: any[] }) {
             </SelectContent>
           </Select>
         </div>
-        
+
         <Button variant="outline" onClick={() => { setSearchQuery(""); setLocationFilter("all"); setTypeFilter("all"); }}>
           Clear
+        </Button>
+        <Button
+          className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white border-0"
+          onClick={() => {
+            // Logic gợi ý job
+            console.log("Suggest jobs clicked");
+          }}
+        >
+          <Sparkles className="mr-2 h-4 w-4" />
+          Gợi ý việc làm
         </Button>
       </div>
 
       {/* DANH SÁCH KẾT QUẢ */}
       <div className="mt-6">
         {/* Đã xóa đoạn thẻ h2 hiển thị chữ Found jobs ở đây */}
-        
+
         <JobList jobs={paginatedJobs} />
-        
+
         {/* UI PHÂN TRANG */}
         {totalPages > 1 && (
-            <div className="flex items-center justify-center space-x-2 mt-8 py-4">
+          <div className="flex items-center justify-center space-x-2 mt-8 py-4">
             <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="flex items-center gap-1"
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="flex items-center gap-1"
             >
-                <ChevronLeft className="h-4 w-4" /> Previous
+              <ChevronLeft className="h-4 w-4" /> Previous
             </Button>
-            
+
             <div className="text-sm font-medium mx-4">
-                Page {currentPage} of {totalPages}
+              Page {currentPage} of {totalPages}
             </div>
 
             <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="flex items-center gap-1"
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-1"
             >
-                Next <ChevronRight className="h-4 w-4" />
+              Next <ChevronRight className="h-4 w-4" />
             </Button>
-            </div>
+          </div>
         )}
       </div>
     </div>
