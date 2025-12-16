@@ -19,6 +19,16 @@ const nextConfig: NextConfig = {
         hostname: "firebasestorage.googleapis.com",
         port: "",
       },
+      {
+        protocol: "https",
+        hostname: "play-lh.googleusercontent.com",
+        port: "",
+      },
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+        port: "",
+      },
     ],
   },
   eslint: {
