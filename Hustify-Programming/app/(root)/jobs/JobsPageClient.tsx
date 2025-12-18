@@ -13,6 +13,8 @@ import {
 
 import JobList from "./JobList";
 import { Job } from "@/types";
+import { getRecommendedJobs } from "@/lib/actions/general.action";
+import { toast } from "sonner";
 
 // Số lượng job hiển thị trên mỗi trang
 const ITEMS_PER_PAGE = 5;
@@ -42,6 +44,11 @@ export default function JobsPageClient({ jobs }: { jobs: any[] }) {
   const [locationFilter, setLocationFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Recommendation States
+  const [isRecommendationMode, setIsRecommendationMode] = useState(false);
+  const [recommendedJobs, setRecommendedJobs] = useState<Job[]>([]);
+  const [isLoadingRecommendation, setIsLoadingRecommendation] = useState(false);
 
   // Reset về trang 1 khi thay đổi bộ lọc
   useEffect(() => {
@@ -125,24 +132,69 @@ export default function JobsPageClient({ jobs }: { jobs: any[] }) {
           </Select>
         </div>
 
-        <Button variant="outline" onClick={() => { setSearchQuery(""); setLocationFilter("all"); setTypeFilter("all"); }}>
+        <Button variant="outline" onClick={() => { setSearchQuery(""); setLocationFilter("all"); setTypeFilter("all"); setIsRecommendationMode(false); }}>
           Clear
         </Button>
         <Button
           className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white border-0"
-          onClick={() => {
-            // Logic gợi ý job
-            console.log("Suggest jobs clicked");
+          onClick={async () => {
+            setIsLoadingRecommendation(true);
+            try {
+              const jobs = await getRecommendedJobs();
+              // Normalize locally for the new feature
+              const normalizedRecs = jobs.map((job: any) => ({
+                ...job,
+                benefits: job.benefits || [],
+                responsibilities: job.responsibilities || [],
+                requirements: job.requirements || [],
+                company: job.company || {
+                  id: job.companyId || "unknown",
+                  name: job.companyName || "Unknown Company",
+                  logo: (job as any).companyLogo || undefined,
+                  description: (job as any).companyDescription || "",
+                  followers: (job as any).companyFollowers || 0,
+                },
+                applicantCount: job.applicantCount || (Array.isArray((job as any).applicants) ? (job as any).applicants.length : 0) || 0,
+                postedDate: job.postedDate || (job as any).createdAt || new Date().toISOString(),
+              }));
+              setRecommendedJobs(normalizedRecs);
+              setIsRecommendationMode(true);
+              // Reset filters to show pure results, or keep them? Let's reset page.
+              setCurrentPage(1);
+              if (jobs.length > 0) {
+                toast.success(`Found ${jobs.length} recommended jobs based on your profile!`);
+              } else {
+                toast.info("No specific recommendations found. Try updating your skills!");
+              }
+            } catch (error) {
+              console.error(error);
+              toast.error("Failed to load recommendations");
+            } finally {
+              setIsLoadingRecommendation(false);
+            }
           }}
+          disabled={isLoadingRecommendation}
         >
           <Sparkles className="mr-2 h-4 w-4" />
-          Gợi ý việc làm
+          {isLoadingRecommendation ? "Analyzing..." : "Gợi ý việc làm"}
         </Button>
       </div>
 
       {/* DANH SÁCH KẾT QUẢ */}
       <div className="mt-6">
         {/* Đã xóa đoạn thẻ h2 hiển thị chữ Found jobs ở đây */}
+
+        {isRecommendationMode && (
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-500" />
+              Recommended for You
+            </h2>
+            <Button variant="ghost" size="sm" onClick={() => setIsRecommendationMode(false)}>
+              Show All Jobs
+            </Button>
+          </div>
+        )}
 
         <JobList jobs={paginatedJobs} />
 

@@ -383,11 +383,11 @@ export async function getJobById(id: string): Promise<Job | null> {
       postedDate: jobData?.postedDate || "",
       company: companyData ||
         jobData?.company || {
-          id: jobData?.companyId || "",
-          name: jobData?.companyName || "Unknown Company",
-          description: jobData?.companyDescription || "",
-          followers: jobData?.companyFollowers || 0,
-        },
+        id: jobData?.companyId || "",
+        name: jobData?.companyName || "Unknown Company",
+        description: jobData?.companyDescription || "",
+        followers: jobData?.companyFollowers || 0,
+      },
       applicantCount: applicantCount,
       responsibilities: jobData?.responsibilities || [],
       requirements: jobData?.requirements || [],
@@ -507,6 +507,78 @@ export async function getUserById(id: string): Promise<User | null> {
     console.error("Error fetching user:", error);
     return null;
   }
+}
+
+export async function getRecommendedJobs(): Promise<Job[]> {
+  const user = await getCurrentUser();
+  if (!user) return [];
+
+  const allJobs = await getAllJobs();
+
+  // Scoring weights
+  const SKILL_MATCH_WEIGHT = 10;
+  const TITLE_MATCH_WEIGHT = 15;
+  const LOCATION_MATCH_WEIGHT = 20;
+  const JOB_TYPE_MATCH_WEIGHT = 20;
+
+  const userSkills = (user.skills || []).map(s => s.toLowerCase());
+  // Use optional chaining for preferences just in case
+  const userLocations = (user.preferences?.locations || []).map(l => l.toLowerCase());
+  const userJobTypes = (user.preferences?.jobTypes || []).map(t => t.toLowerCase());
+
+  const scoredJobs = allJobs.map(job => {
+    let score = 0;
+
+    // 1. Skill Match in Requirements & Responsibilities
+    // Combine text to search in
+    const jobText = [
+      ...(job.requirements || []),
+      ...(job.responsibilities || [])
+    ].join(" ").toLowerCase();
+
+    userSkills.forEach(skill => {
+      if (jobText.includes(skill)) {
+        score += SKILL_MATCH_WEIGHT;
+      }
+    });
+
+    // 2. Title Match (User skills in Job Title)
+    // Helps matches like "React Developer" if user has "React" skill
+    const jobTitle = job.title.toLowerCase();
+    userSkills.forEach(skill => {
+      if (jobTitle.includes(skill)) {
+        score += TITLE_MATCH_WEIGHT;
+      }
+    });
+
+    // 3. Location Match
+    if (userLocations.length > 0 && job.location) {
+      const jobLoc = job.location.toLowerCase();
+      // Check for exact match or substring match
+      if (userLocations.some(ul => jobLoc.includes(ul) || ul === "all")) {
+        score += LOCATION_MATCH_WEIGHT;
+      }
+    }
+
+    // 4. Job Type Match
+    if (userJobTypes.length > 0 && job.jobType) {
+      const jType = job.jobType.toLowerCase();
+      if (userJobTypes.includes(jType) || userJobTypes.includes("all")) {
+        score += JOB_TYPE_MATCH_WEIGHT;
+      }
+    }
+
+    return { job, score };
+  });
+
+  // Filter out zero scores to ensure relevance, or keep them if we want to show something?
+  // Let's keep only those with at least some match (> 0) to be "Recommended"
+  const recommended = scoredJobs
+    .filter(item => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(item => item.job);
+
+  return recommended.slice(0, 10); // Return top 10
 }
 
 

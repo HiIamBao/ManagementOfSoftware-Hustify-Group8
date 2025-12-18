@@ -32,6 +32,12 @@ interface CreateFeedbackParams {
   feedbackId?: string;
 }
 
+interface UserPreferences {
+  locations?: string[];
+  jobTypes?: string[];
+  minSalary?: number;
+}
+
 interface User {
   image: string;
   coverimg: string;
@@ -47,6 +53,7 @@ interface User {
   companyId?: string; // For HR users, reference to their company
   description?: string;
   skills?: string[];
+  preferences?: UserPreferences;
   experiences?: string[];
   education?: Array<{
     school: string;
