@@ -71,14 +71,13 @@ class JobDBPostgreClient:
 
     def insert_job_detail(self, job_detail: dict):
         insert_query = """
-        INSERT INTO detail_jobs (url_hash, job_url,title, datetime, detail_title, detail_salary, detail_location, detail_experience, deadline, tags, desc_mota,desc_yeucau,desc_quyenloi,working_addresses,working_times,company_url_from_job)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO detail_jobs (url_hash, job_url, datetime, detail_title, detail_salary, detail_location, detail_experience, deadline, tags, desc_mota,desc_yeucau,desc_quyenloi,working_addresses,working_times,company_url_from_job, general_info, box_categories)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (url_hash) DO NOTHING
         """
         self.cursor.execute(insert_query, (
             job_detail.get("url_hash"),
             job_detail.get("job_url"),
-            job_detail.get("title"),
             job_detail.get("datetime"),
             job_detail.get("detail_title"),
             job_detail.get("detail_salary"),
@@ -91,7 +90,9 @@ class JobDBPostgreClient:
             job_detail.get("desc_quyenloi"),
             job_detail.get("working_addresses"),
             job_detail.get("working_times"),
-            job_detail.get("company_url_from_job")
+            job_detail.get("company_url_from_job"),
+            str(job_detail.get("general_info")),
+            str(job_detail.get("box_categories"))
         ))
         self.connection.commit()
 

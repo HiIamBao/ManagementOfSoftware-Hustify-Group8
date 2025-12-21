@@ -4,6 +4,7 @@ import re
 import random
 from typing import Dict, List, Optional
 from urllib.parse import urljoin, urlparse
+import json
 
 import requests
 from bs4 import BeautifulSoup
@@ -189,6 +190,33 @@ def extract_company_link_from_job(soup: BeautifulSoup) -> Optional[str]:
     cand = soup.select_one("a.company[href]") or soup.select_one("a[href*='/cong-ty/']")
     return urljoin(BASE, cand["href"]) if cand and cand.has_attr("href") else None
 
+def extract_general_info(soup: BeautifulSoup) -> Dict:
+    """Extract general job info from the job detail page soup."""
+    info = {}
+    for li in soup.select(".box-general-group-info"):
+        label_el = li.select_one(".box-general-group-info-title")
+        value_el = li.select_one(".box-general-group-info-value")
+        label = text(label_el) if label_el else None
+        value = text(value_el) if value_el else None
+        if label and value:
+            info[label] = value
+    return info
+
+def extract_box_categories(soup: BeautifulSoup) -> List[Dict]:
+    res = []
+    for box in soup.select(".box-category"):
+        box_title = text(box.select_one(".box-title"))
+        categories = []
+        for a in box.select(".box-category-tag"):
+            cat_name = text(a)
+            categories.append(cat_name)
+        if box_title:
+            res.append({
+                "box_title": box_title,
+                "categories": categories
+            })
+    return res
+
 def scrape_job_detail(session: requests.Session, job_url: str) -> Dict:
     soup = get_soup(session, job_url)
     smart_sleep()  # nghỉ nhẹ giữa các trang
@@ -203,6 +231,8 @@ def scrape_job_detail(session: requests.Session, job_url: str) -> Dict:
     addrs = extract_working_addresses(soup)
     times = extract_working_times(soup)
     company_url_detail = extract_company_link_from_job(soup)
+    general_info = extract_general_info(soup)
+    box_categories = extract_box_categories(soup)
 
     return {
         "detail_title": title,
@@ -217,6 +247,8 @@ def scrape_job_detail(session: requests.Session, job_url: str) -> Dict:
         "working_addresses": "; ".join(addrs) if addrs else None,
         "working_times": "; ".join(times) if times else None,
         "company_url_from_job": company_url_detail,
+        "general_info": general_info,  # giữ nguyên dict, không encode json
+        "box_categories": box_categories,
     }
 
 
@@ -241,4 +273,11 @@ class JobDetailCrawler:
     
 
 if __name__ == "__main__":
-    qtpl = "https://www.topcv.vn/tim-viec-lam-data-analyst?type_keyword=1&page={page}&sba=1"
+    # test nhanh
+    crawler = JobDetailCrawler()
+    test_job = {
+        "job_url": "viec-lam/2d-ui-ux-game-artist-tu-2-nam-kinh-nghiem/1960512.html",
+        "url_hash": "testhash123"
+    }
+    result = crawler.crawl_job_detail(test_job)
+    print(result)
