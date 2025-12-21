@@ -159,7 +159,7 @@ export async function createFeedback(params: CreateFeedbackParams) {
       .join("");
 
     const { object } = await generateObject({
-      model: google("gemini-2.0-flash-001", {
+      model: google("gemini-2.5-flash", {
         structuredOutputs: false,
       }),
       schema: feedbackSchema,
@@ -271,11 +271,86 @@ export async function getAllJobs(): Promise<Job[]> {
     .orderBy("createdAt", "desc")
     .get();
 
-  return jobsSnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as Job[];
+  const rawJobs = jobsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as any[];
+
+  // Collect unique companyIds
+  const companyIds = Array.from(
+    new Set(
+      rawJobs
+        .map((j) => j.companyId)
+        .filter((id) => typeof id === "string" && id.length > 0)
+    )
+  );
+
+  // Fetch companies in parallel (simple loop; can be optimized later)
+  const companyMap: Record<string, any> = {};
+  await Promise.all(
+    companyIds.map(async (cid) => {
+      try {
+        const cdoc = await db.collection("companies").doc(cid).get();
+        if (cdoc.exists) companyMap[cid] = { id: cdoc.id, ...cdoc.data() };
+      } catch (e) {
+        console.error("Error fetching company:", cid, e);
+      }
+    })
+  );
+
+  // Enrich each job with company info and safe defaults
+  const jobs: Job[] = rawJobs.map((j) => {
+    const compFromId = j.companyId ? companyMap[j.companyId] : null;
+    const company = compFromId || j.company || {
+      id: j.companyId || "",
+      name: j.companyName || "",
+      logo: j.companyLogo || "",
+      description: j.companyDescription || "",
+      followers: j.companyFollowers || 0,
+    };
+
+    const applicantCount = j.applicantCount || (Array.isArray(j.applicants) ? j.applicants.length : 0) || 0;
+
+    return {
+      id: j.id,
+      title: j.title || "",
+      location: j.location || "",
+      description: j.description || "",
+      postedDate: j.postedDate || j.createdAt || new Date().toISOString(),
+      company,
+      applicantCount,
+      responsibilities: j.responsibilities || [],
+      requirements: j.requirements || [],
+      benefits: j.benefits || [],
+      ...j,
+    } as Job;
+  });
+
+  return jobs;
 }
+
+/**
+ * Get all published jobs for a specific company
+ */
+export async function getJobsByCompanyId(companyId: string): Promise<Job[]> {
+  try {
+    const jobsSnapshot = await db
+      .collection("jobs")
+      .where("companyId", "==", companyId)
+      .where("status", "==", "published")
+      .orderBy("createdAt", "desc")
+      .get();
+
+    if (jobsSnapshot.empty) {
+      return [];
+    }
+
+    const jobs = jobsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Job[];
+    return jobs;
+
+  } catch (error) {
+    console.error("Error fetching jobs by company ID:", error);
+    return [];
+  }
+}
+
 
 export async function getJobById(id: string): Promise<Job | null> {
   try {
@@ -339,80 +414,73 @@ export async function getCompanyById(id: string): Promise<Company | null> {
     return null;
   }
 }
-
+interface ApplyJobParams {
+  jobId: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  cvLink: string;
+  coverLetter?: string;
+}
 export async function applyToJob(
-  jobId: string
+  params: ApplyJobParams
 ): Promise<{ success: boolean; message: string }> {
   try {
-    // Get current user from cookies (you'll need to implement this based on your auth system)
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get("session")?.value;
+    const { jobId, fullName, email, phone, cvLink, coverLetter } = params;
 
-    if (!sessionCookie) {
-      return {
-        success: false,
-        message: "You must be logged in to apply for a job",
-      };
+    // 1. Check Authentication
+    const user = await getCurrentUser();
+    if (!user) {
+      return { success: false, message: "You must be logged in to apply." };
     }
 
-    // Get job reference
+    // 2. Fetch Job from Firestore
     const jobRef = db.collection("jobs").doc(jobId);
     const jobDoc = await jobRef.get();
 
     if (!jobDoc.exists) {
-      return {
-        success: false,
-        message: "Job not found",
-      };
+      return { success: false, message: "Job not found." };
     }
 
-    // Get current user ID (replace with your actual auth logic)
-    // For example, decode the session cookie to get the user ID
-    // This is just a placeholder - implement your actual user ID extraction
-    const userId = "current-user-id"; // Replace with actual user ID extraction
-
-    // Check if user has already applied
     const jobData = jobDoc.data();
 
-    const jobDataTyped = jobData as { applicants?: Applicant[] };
+    // 3. Check for Existing Application
+    // Use 'any' type casting for applicants to avoid TS errors if not strictly defined
+    const applicants = (jobData?.applicants || []) as any[];
+    const hasApplied = applicants.some((app) => app.userId === user.id);
 
-    const existingApplication = jobDataTyped?.applicants?.find(
-      (app: Applicant) => app.userId === userId
-    );
-
-    if (existingApplication) {
-      return {
-        success: false,
-        message: "You have already applied for this job",
-      };
+    if (hasApplied) {
+      return { success: false, message: "You have already applied for this job." };
     }
 
-    // Update job with new applicant and increment count
+    // 4. Create New Applicant Data
     const newApplicant = {
-      userId: userId,
+      userId: user.id,
+      fullName: fullName,
+      email: email,
+      phone: phone,
+      resumeUrl: cvLink,
+      cvLink: cvLink,
+      coverLetter: coverLetter || "",
       appliedAt: new Date().toISOString(),
       status: "pending",
-    };
+    } as Applicant;
 
+    // 5. Update Firestore (Add to applicants array & increment count)
     await jobRef.update({
-      applicants: [...(jobData?.applicants || []), newApplicant],
+      applicants: [...applicants, newApplicant],
       applicantCount: (jobData?.applicantCount || 0) + 1,
       updatedAt: new Date().toISOString(),
     });
 
-    // Revalidate the job page to reflect changes
+    // 6. Revalidate Path to update UI immediately
     revalidatePath(`/jobs/${jobId}`);
+    revalidatePath(`/hr/jobs/${jobId}/applicants`);
 
-    return {
-      success: true,
-      message: "Application submitted successfully",
-    };
+    return { success: true, message: "Application submitted successfully!" };
   } catch (error) {
     console.error("Error applying to job:", error);
-    return {
-      success: false,
-      message: "An error occurred while submitting your application",
-    };
+    return { success: false, message: "An error occurred. Please try again later." };
   }
 }
 export async function getFeedbacksByUserId(
@@ -440,3 +508,6 @@ export async function getUserById(id: string): Promise<User | null> {
     return null;
   }
 }
+
+
+

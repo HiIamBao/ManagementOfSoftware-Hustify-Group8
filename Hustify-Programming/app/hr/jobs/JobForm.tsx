@@ -6,10 +6,11 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form } from "@/components/ui/form";
+import { Form, FormField as ShadcnFormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import FormField from "@/components/FormField";
-import { createJob, updateJob } from "@/lib/actions/hr-jobs.action";
+import { createJob, updateJob, publishJob } from "@/lib/actions/hr-jobs.action";
 
 const jobFormSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
@@ -19,7 +20,7 @@ const jobFormSchema = z.object({
   requirements: z.string().min(10, "Requirements are required"),
   benefits: z.string().optional(),
   recruitmentUrl: z.string().url().optional().or(z.literal("")),
-  status: z.enum(["draft", "published"]).default("draft"),
+  jobType: z.enum(["full-time", "part-time", "remote"]).default("full-time"),
 });
 
 type JobFormData = z.infer<typeof jobFormSchema>;
@@ -43,11 +44,11 @@ export default function JobForm({ initialData, jobId }: JobFormProps) {
       requirements: initialData?.requirements?.join("\n") || "",
       benefits: initialData?.benefits?.join("\n") || "",
       recruitmentUrl: initialData?.recruitmentUrl || "",
-      status: initialData?.status || "draft",
+      jobType: initialData?.jobType || "full-time",
     },
   });
 
-  const onSubmit = async (data: JobFormData) => {
+  const onSubmit = async (data: JobFormData, andPublish = false) => {
     setIsSubmitting(true);
     try {
       const jobData = {
@@ -58,17 +59,30 @@ export default function JobForm({ initialData, jobId }: JobFormProps) {
         requirements: data.requirements.split("\n").filter(r => r.trim()),
         benefits: data.benefits ? data.benefits.split("\n").filter(b => b.trim()) : [],
         recruitmentUrl: data.recruitmentUrl || "",
-        status: data.status,
+        jobType: data.jobType,
       };
 
       let result;
+      let newJobId = jobId;
+
       if (jobId) {
         result = await updateJob(jobId, jobData);
       } else {
         result = await createJob(jobData);
+        if (result.jobId) {
+          newJobId = result.jobId;
+        }
       }
 
-      if (result.success) {
+      if (result.success && newJobId && andPublish) {
+        const publishResult = await publishJob(newJobId);
+        if (publishResult.success) {
+          toast.success("Job saved and published successfully!");
+        } else {
+          toast.error(`Job saved, but failed to publish: ${publishResult.message}`);
+        }
+        router.push("/hr/jobs");
+      } else if (result.success) {
         toast.success(result.message);
         router.push("/hr/jobs");
       } else {
@@ -80,6 +94,10 @@ export default function JobForm({ initialData, jobId }: JobFormProps) {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handlePublish = () => {
+    form.handleSubmit((data) => onSubmit(data, true))();
   };
 
   return (
@@ -100,6 +118,19 @@ export default function JobForm({ initialData, jobId }: JobFormProps) {
             label="Location"
             placeholder="e.g., San Francisco, CA"
             type="text"
+          />
+
+          <FormField
+            control={form.control}
+            name="jobType"
+            label="Job Type"
+            placeholder="Select a job type"
+            type="select"
+            options={[
+              { value: "full-time", label: "Full-time" },
+              { value: "part-time", label: "Part-time" },
+              { value: "remote", label: "Remote" },
+            ]}
           />
 
           <FormField
@@ -142,36 +173,15 @@ export default function JobForm({ initialData, jobId }: JobFormProps) {
             type="text"
           />
 
-          <div className="space-y-3">
-            <label className="text-sm font-medium">Status</label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  value="draft"
-                  checked={form.watch("status") === "draft"}
-                  onChange={() => form.setValue("status", "draft")}
-                  className="w-4 h-4"
-                />
-                <span className="text-sm">Draft</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  value="published"
-                  checked={form.watch("status") === "published"}
-                  onChange={() => form.setValue("status", "published")}
-                  className="w-4 h-4"
-                />
-                <span className="text-sm">Publish Now</span>
-              </label>
-            </div>
-          </div>
-
           <div className="flex gap-4">
             <Button type="submit" disabled={isSubmitting} className="btn">
               {isSubmitting ? "Saving..." : jobId ? "Update Job" : "Create Job"}
             </Button>
+            {jobId && initialData?.status === 'draft' && (
+              <Button type="button" onClick={handlePublish} disabled={isSubmitting} className="btn-secondary">
+                {isSubmitting ? "Publishing..." : "Save and Publish"}
+              </Button>
+            )}
             <Button
               type="button"
               onClick={() => router.back()}

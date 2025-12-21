@@ -7,7 +7,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { createJobBasedInterview } from "@/lib/actions/general.action";
 import { Job } from "@/types";
-
+import { ApplyJobDialog } from "@/components/jobs/ApplyJobDialog";
 // Client component that receives job data as props
 export default function JobDetailClient({ job }: { job: Job }) {
   const router = useRouter();
@@ -124,14 +124,18 @@ export default function JobDetailClient({ job }: { job: Job }) {
               "INTERVIEW"
             )}
           </button>
-          <Link
-            href={job.recruitmentUrl || "#"}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-secondary flex items-center justify-center"
-          >
-            APPLY
-          </Link>
+                    {/* 2. THAY THẾ NÚT APPLY (LINK) BẰNG DIALOG */}
+          <ApplyJobDialog
+            jobTitle={job.title}
+            jobId={job.id}
+            trigger={
+              // Giữ nguyên class btn-secondary để không đổi giao diện
+              <button className="btn-secondary flex items-center justify-center">
+                APPLY
+              </button>
+            }
+          />
+
           <Link
             href="/jobs"
             className="btn-primary flex items-center justify-center"

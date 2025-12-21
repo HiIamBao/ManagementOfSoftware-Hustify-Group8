@@ -34,9 +34,14 @@ export default async function HRDashboard() {
             Manage your job postings and applicants
           </p>
         </div>
-        <Button asChild>
-          <Link href="/hr/jobs/new">+ Create New Job</Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline">
+            <Link href="/blog">Go to Blog</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/hr/jobs/new">+ Create New Job</Link>
+          </Button>
+        </div>
       </div>
 
       {/* Statistics Cards */}

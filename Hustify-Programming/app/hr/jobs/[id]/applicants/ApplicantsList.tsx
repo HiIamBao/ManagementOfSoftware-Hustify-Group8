@@ -1,6 +1,9 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import {
   updateApplicantStatus,
@@ -11,7 +14,7 @@ import { Applicant } from "@/types";
 
 interface ApplicantsListProps {
   jobId: string;
-  applicants: (Applicant & { userName?: string; userEmail?: string })[];
+  applicants: (Applicant & { userName?: string; userEmail?: string; user?: any })[];
 }
 
 const statusColors: Record<string, string> = {
@@ -89,16 +92,22 @@ export default function ApplicantsList({
             }
           >
             <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg">
-                  {applicant.userName || "Unknown"}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {applicant.userEmail}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                  Applied {new Date(applicant.appliedAt).toLocaleDateString()}
-                </p>
+              <div className="flex items-start gap-3 flex-1">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={applicant.user?.image} alt={applicant.userName || applicant.user?.name || "User"} />
+                  <AvatarFallback>{(applicant.userName?.charAt(0) || applicant.user?.name?.charAt(0) || "U").toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="font-semibold text-lg">
+                    {applicant.userName || applicant.user?.name || "Unknown"}
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {applicant.userEmail}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                    Applied {new Date(applicant.appliedAt).toLocaleDateString()}
+                  </p>
+                </div>
               </div>
               <div className="flex items-center gap-4">
                 <span
@@ -117,7 +126,122 @@ export default function ApplicantsList({
 
           {expandedId === applicant.userId && (
             <div className="border-t border-gray-200 dark:border-gray-800 p-6 space-y-6">
+              {/* Applicant Profile */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-sm font-medium">Applicant Profile</label>
+                  <Button asChild variant="outline" size="sm" className="rounded-full">
+                    <Link href={`/user/${applicant.userId}`}>View full profile</Link>
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="space-y-1">
+                    <p><span className="text-gray-500">Email:</span> {applicant.user?.email || applicant.userEmail || "N/A"}</p>
+                    <p><span className="text-gray-500">Phone:</span> {applicant.user?.phone || "N/A"}</p>
+                    <p><span className="text-gray-500">Address:</span> {applicant.user?.address || "N/A"}</p>
+                    <p><span className="text-gray-500">Birthday:</span> {applicant.user?.birthday || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 mb-1">About</p>
+                    <p className="text-sm leading-relaxed line-clamp-3">
+                      {applicant.user?.description || "No description provided."}
+                    </p>
+                  </div>
+                </div>
+                {Array.isArray(applicant.user?.skills) && applicant.user!.skills.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-gray-500 text-sm mb-1">Skills</p>
+                    <div className="flex flex-wrap gap-2">
+                      {applicant.user!.skills.slice(0, 10).map((s: string, idx: number) => (
+                        <span key={idx} className="px-2 py-0.5 rounded-full border text-xs">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {Array.isArray(applicant.user?.experiences) && applicant.user!.experiences.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-gray-500 text-sm mb-1">Experience</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      {applicant.user!.experiences.slice(0, 3).map((e: string, idx: number) => (
+                        <li key={idx}>{e}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {Array.isArray(applicant.user?.projects) && applicant.user!.projects.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-gray-500 text-sm mb-1">Projects</p>
+                    <ul className="space-y-1">
+                      {applicant.user!.projects.slice(0, 2).map((p: any, idx: number) => (
+                        <li key={idx} className="flex items-center gap-2">
+                          <span className="font-medium">{p.title}</span>
+                          {p.link && (
+                            <a href={p.link} target="_blank" rel="noreferrer" className="text-xs text-[#BF3131] hover:underline">Visit</a>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
               {/* Status Update */}
+              {/* Application Details */}
+              <div>
+                <label className="text-sm font-medium block mb-3">Application</label>
+                <div className="space-y-3 text-sm">
+                  {(applicant.resumeUrl || (applicant as any).cvLink) && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500">Resume/CV:</span>
+                      <a
+                        href={(applicant as any).resumeUrl || (applicant as any).cvLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[#BF3131] hover:underline"
+                      >
+                        Open resume
+                      </a>
+                    </div>
+                  )}
+                  {applicant.coverLetter && (
+                    <div>
+                      <p className="text-gray-500 mb-1">Cover letter</p>
+                      <div className="p-3 border rounded bg-white dark:bg-[#0a0a0a] whitespace-pre-wrap">
+                        {applicant.coverLetter}
+                      </div>
+                    </div>
+                  )}
+                  {Array.isArray((applicant as any).answers) && (applicant as any).answers.length > 0 && (
+                    <div>
+                      <p className="text-gray-500 mb-1">Form answers</p>
+                      <ul className="space-y-2">
+                        {(applicant as any).answers.map((qa: any, idx: number) => (
+                          <li key={idx}>
+                            <p className="font-medium">Q: {qa.question}</p>
+                            <p className="text-gray-700 dark:text-gray-300">A: {qa.answer}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {Array.isArray((applicant as any).attachments) && (applicant as any).attachments.length > 0 && (
+                    <div>
+                      <p className="text-gray-500 mb-1">Attachments</p>
+                      <ul className="space-y-1">
+                        {(applicant as any).attachments.map((att: any, idx: number) => (
+                          <li key={idx}>
+                            <a href={att.url} target="_blank" rel="noreferrer" className="text-[#BF3131] hover:underline">
+                              {att.name || att.url}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
               <div>
                 <label className="text-sm font-medium block mb-3">
                   Change Status

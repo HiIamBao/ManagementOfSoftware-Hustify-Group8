@@ -42,7 +42,8 @@ interface User {
   email: string;
   id: string;
   darkmode: boolean;
-  userRole?: "normal" | "hr"; // Default: "normal"
+  userRole?: "normal" | "hr" | "admin";
+  status?: "active" | "deactivated";
   companyId?: string; // For HR users, reference to their company
   description?: string;
   skills?: string[];
@@ -59,6 +60,7 @@ interface User {
     description: string;
     link: string;
   }>;
+  followingCompanies?: string[]; // IDs of companies the user follows
 }
 
 interface InterviewCardProps {
@@ -104,9 +106,21 @@ export interface SignUpParams {
   name: string;
   email: string;
   password: string;
-  userRole?: "normal" | "hr";
-  companyName?: string;
+  userRole?: "normal" | "hr" | "company-admin";
+  companyId?: string;
 }
+
+export interface RegisterCompanyAndAdminParams {
+  // User fields
+  userName: string;
+  userEmail: string;
+  password: string;
+  // Company fields
+  companyName: string;
+  companyIndustry?: string;
+  companyDescription?: string;
+}
+
 
 type FormType = "sign-in" | "sign-up";
 
@@ -129,7 +143,11 @@ type Company = {
   logo?: string;
   coverimg?: string;
   description: string;
-  followers: number;
+  website?: string;
+  industry?: string;
+  gallery?: string[];
+  followerCount?: number;
+  followers?: string[]; // Array of user IDs
   createdAt?: string;
   updatedAt?: string;
   leaders?: Array<{
@@ -140,12 +158,23 @@ type Company = {
   }>;
   spotlightJobs?: Job[];
   fields?: string[];
+  hrMembers?: string[]; // Array of user IDs for HR members
 };
 
 type Applicant = {
   userId: string;
   appliedAt: string;
   status: "pending" | "reviewing" | "interviewed" | "rejected" | "offered";
+  // Application form data
+  fullName?: string;
+  email?: string;
+  phone?: string;
+  coverLetter?: string;
+  resumeUrl?: string;
+  cvLink?: string;
+  answers?: Array<{ question: string; answer: string }>;
+  attachments?: Array<{ name: string; url: string }>;
+  // HR review fields
   rating?: number; // HR can rate applicants (0-5)
   notes?: string; // HR notes about applicant
   updatedAt?: string;
@@ -168,6 +197,7 @@ type Job = {
   postedBy?: string; // User ID of HR who posted
   companyId?: string; // Company ID
   status?: "draft" | "published" | "closed"; // Job status
+  jobType?: "full-time" | "part-time" | "remote";
   viewCount?: number; // Number of views
   createdAt?: string;
   updatedAt?: string;
@@ -223,6 +253,7 @@ export interface CreateJobParams {
   benefits: string[];
   recruitmentUrl?: string;
   status?: "draft" | "published";
+  jobType?: "full-time" | "part-time" | "remote";
 }
 
 export interface UpdateJobParams extends Partial<CreateJobParams> {
@@ -234,6 +265,26 @@ export interface CreateCompanyParams {
   description: string;
   logo?: string;
   coverimg?: string;
+  fields?: string[];
+}
+
+export interface Notification {
+  id: string;
+  userId: string; // The ID of the user who receives the notification
+  message: string;
+  link: string; // Link to the relevant page (e.g., a job posting)
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface UpdateCompanyParams {
+  name?: string;
+  description?: string;
+  logo?: string;
+  coverimg?: string;
+  website?: string;
+  industry?: string;
+  gallery?: string[];
   fields?: string[];
 }
 
