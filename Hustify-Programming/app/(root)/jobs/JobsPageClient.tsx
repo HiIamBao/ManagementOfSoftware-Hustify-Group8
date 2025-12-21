@@ -10,6 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "sonner";
+import { getRecommendedJobs } from "@/lib/actions/general.action";
 
 import JobList from "./JobList";
 import { Job } from "@/types";
@@ -42,6 +44,11 @@ export default function JobsPageClient({ jobs }: { jobs: any[] }) {
   const [locationFilter, setLocationFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+
+  // States for job recommendations
+  const [isRecommendationMode, setIsRecommendationMode] = useState(false);
+  const [recommendedJobs, setRecommendedJobs] = useState<Job[]>([]);
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
 
   // Reset về trang 1 khi thay đổi bộ lọc
   useEffect(() => {
@@ -76,6 +83,28 @@ export default function JobsPageClient({ jobs }: { jobs: any[] }) {
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Handler for getting job recommendations
+  const handleGetRecommendations = async () => {
+    setIsLoadingRecommendations(true);
+    try {
+      const recommendations = await getRecommendedJobs(10);
+      if (recommendations.length === 0) {
+        toast.info("No recommendations found. Please update your profile with skills and experiences.");
+        setIsLoadingRecommendations(false);
+        return;
+      }
+      setRecommendedJobs(recommendations);
+      setIsRecommendationMode(true);
+      setCurrentPage(1);
+      toast.success(`Found ${recommendations.length} recommended jobs for you!`);
+    } catch (error) {
+      console.error("Error getting recommendations:", error);
+      toast.error("Failed to get job recommendations. Please try again.");
+    } finally {
+      setIsLoadingRecommendations(false);
+    }
   };
 
   return (
