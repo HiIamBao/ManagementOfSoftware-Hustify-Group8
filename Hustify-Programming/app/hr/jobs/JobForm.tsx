@@ -1,0 +1,188 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Form } from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
+import FormField from "@/components/FormField";
+import { createJob, updateJob } from "@/lib/actions/hr-jobs.action";
+
+const jobFormSchema = z.object({
+  title: z.string().min(3, "Title must be at least 3 characters"),
+  location: z.string().min(2, "Location is required"),
+  description: z.string().min(10, "Description must be at least 10 characters"),
+  responsibilities: z.string().min(10, "Responsibilities are required"),
+  requirements: z.string().min(10, "Requirements are required"),
+  benefits: z.string().optional(),
+  recruitmentUrl: z.string().url().optional().or(z.literal("")),
+  status: z.enum(["draft", "published"]).default("draft"),
+});
+
+type JobFormData = z.infer<typeof jobFormSchema>;
+
+interface JobFormProps {
+  initialData?: any;
+  jobId?: string;
+}
+
+export default function JobForm({ initialData, jobId }: JobFormProps) {
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useForm<JobFormData>({
+    resolver: zodResolver(jobFormSchema),
+    defaultValues: {
+      title: initialData?.title || "",
+      location: initialData?.location || "",
+      description: initialData?.description || "",
+      responsibilities: initialData?.responsibilities?.join("\n") || "",
+      requirements: initialData?.requirements?.join("\n") || "",
+      benefits: initialData?.benefits?.join("\n") || "",
+      recruitmentUrl: initialData?.recruitmentUrl || "",
+      status: initialData?.status || "draft",
+    },
+  });
+
+  const onSubmit = async (data: JobFormData) => {
+    setIsSubmitting(true);
+    try {
+      const jobData = {
+        title: data.title,
+        location: data.location,
+        description: data.description,
+        responsibilities: data.responsibilities.split("\n").filter(r => r.trim()),
+        requirements: data.requirements.split("\n").filter(r => r.trim()),
+        benefits: data.benefits ? data.benefits.split("\n").filter(b => b.trim()) : [],
+        recruitmentUrl: data.recruitmentUrl || "",
+        status: data.status,
+      };
+
+      let result;
+      if (jobId) {
+        result = await updateJob(jobId, jobData);
+      } else {
+        result = await createJob(jobData);
+      }
+
+      if (result.success) {
+        toast.success(result.message);
+        router.push("/hr/jobs");
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast.error("An error occurred while saving the job");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="bg-white dark:bg-[#121212] p-8 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <FormField
+            control={form.control}
+            name="title"
+            label="Job Title"
+            placeholder="e.g., Senior React Developer"
+            type="text"
+          />
+
+          <FormField
+            control={form.control}
+            name="location"
+            label="Location"
+            placeholder="e.g., San Francisco, CA"
+            type="text"
+          />
+
+          <FormField
+            control={form.control}
+            name="description"
+            label="Job Description"
+            placeholder="Describe the job in detail..."
+            type="textarea"
+          />
+
+          <FormField
+            control={form.control}
+            name="responsibilities"
+            label="Responsibilities (one per line)"
+            placeholder="• Develop features&#10;• Code reviews&#10;• Team collaboration"
+            type="textarea"
+          />
+
+          <FormField
+            control={form.control}
+            name="requirements"
+            label="Requirements (one per line)"
+            placeholder="• 5+ years experience&#10;• React expertise&#10;• TypeScript knowledge"
+            type="textarea"
+          />
+
+          <FormField
+            control={form.control}
+            name="benefits"
+            label="Benefits (one per line)"
+            placeholder="• Competitive salary&#10;• Health insurance&#10;• Remote work"
+            type="textarea"
+          />
+
+          <FormField
+            control={form.control}
+            name="recruitmentUrl"
+            label="Recruitment URL (Optional)"
+            placeholder="https://example.com/apply"
+            type="text"
+          />
+
+          <div className="space-y-3">
+            <label className="text-sm font-medium">Status</label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  value="draft"
+                  checked={form.watch("status") === "draft"}
+                  onChange={() => form.setValue("status", "draft")}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm">Draft</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  value="published"
+                  checked={form.watch("status") === "published"}
+                  onChange={() => form.setValue("status", "published")}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm">Publish Now</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <Button type="submit" disabled={isSubmitting} className="btn">
+              {isSubmitting ? "Saving..." : jobId ? "Update Job" : "Create Job"}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => router.back()}
+              className="btn-secondary"
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </div>
+  );
+}
+
