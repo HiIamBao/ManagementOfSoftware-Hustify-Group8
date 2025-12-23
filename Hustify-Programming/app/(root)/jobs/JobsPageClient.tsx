@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { getRecommendedJobs } from "@/lib/actions/general.action";
+import { getCurrentUser } from "@/lib/actions/auth.action";
+import { useRouter } from "next/navigation";
 
 import JobList from "./JobList";
 import { Job } from "@/types";
@@ -20,6 +22,26 @@ import { Job } from "@/types";
 const ITEMS_PER_PAGE = 5;
 
 export default function JobsPageClient({ jobs }: { jobs: any[] }) {
+  const router = useRouter();
+
+  // Helper function to check if user profile is empty
+  const isProfileEmpty = async (): Promise<boolean> => {
+    try {
+      const user = await getCurrentUser();
+      if (!user) return true;
+
+      const hasSkills = user.skills && user.skills.length > 0;
+      const hasExperiences = user.experiences && user.experiences.length > 0;
+      const hasEducation = user.education && user.education.length > 0;
+      const hasProjects = user.projects && user.projects.length > 0;
+
+      // Profile is empty if all four are empty
+      return !hasSkills && !hasExperiences && !hasEducation && !hasProjects;
+    } catch (error) {
+      console.error("Error checking profile:", error);
+      return true; // Assume empty on error to be safe
+    }
+  };
 
   // 1. CHUẨN HÓA DỮ LIỆU
   const safeJobs: Job[] = jobs.map((job) => ({
@@ -115,6 +137,22 @@ export default function JobsPageClient({ jobs }: { jobs: any[] }) {
   const handleGetRecommendations = async () => {
     setIsLoadingRecommendations(true);
     try {
+      // Check if user profile is empty
+      const profileEmpty = await isProfileEmpty();
+      if (profileEmpty) {
+        toast.error("Please complete your profile first. Add your skills, experiences, education, and projects to get personalized job recommendations.", {
+          duration: 6000,
+          action: {
+            label: "Go to Profile",
+            onClick: () => {
+              window.location.href = "/user";
+            },
+          },
+        });
+        setIsLoadingRecommendations(false);
+        return;
+      }
+
       const recommendations = await getRecommendedJobs(10);
       if (recommendations.length === 0) {
         toast.info("No recommendations found. Please update your profile with skills and experiences.");
