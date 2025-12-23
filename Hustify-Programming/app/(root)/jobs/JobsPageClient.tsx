@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Sparkles, X } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -55,6 +55,9 @@ export default function JobsPageClient({ jobs }: { jobs: any[] }) {
     setCurrentPage(1);
   }, [searchQuery, locationFilter, typeFilter]);
 
+  // Determine which jobs to filter based on recommendation mode
+  const jobsToFilter = isRecommendationMode ? recommendedJobs : safeJobs;
+
   // 3. Logic Lọc Nâng Cao
   const filteredJobs = safeJobs.filter((job) => {
     const matchesSearch =
@@ -73,10 +76,33 @@ export default function JobsPageClient({ jobs }: { jobs: any[] }) {
     return matchesSearch && matchesLocation && matchesType;
   });
 
+  // Filter recommended jobs with the same logic when in recommendation mode
+  const filteredRecommendedJobs = isRecommendationMode
+    ? jobsToFilter.filter((job) => {
+        const matchesSearch =
+          job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (job.company.name || "").toLowerCase().includes(searchQuery.toLowerCase());
+
+        const matchesLocation =
+          locationFilter === "all" ||
+          job.location.toLowerCase().includes(locationFilter.toLowerCase());
+
+        const jobType = job.jobType || "";
+        const matchesType =
+          typeFilter === "all" ||
+          jobType.toLowerCase() === typeFilter.toLowerCase();
+
+        return matchesSearch && matchesLocation && matchesType;
+      })
+    : [];
+
+  // Use recommended jobs when in recommendation mode, otherwise use existing filteredJobs
+  const finalFilteredJobs = isRecommendationMode ? filteredRecommendedJobs : filteredJobs;
+
   // 4. Logic Phân Trang
-  const totalPages = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(finalFilteredJobs.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedJobs = filteredJobs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const paginatedJobs = finalFilteredJobs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   const uniqueLocations = Array.from(new Set(safeJobs.map((j) => j.location).filter(Boolean)));
 
@@ -105,6 +131,15 @@ export default function JobsPageClient({ jobs }: { jobs: any[] }) {
     } finally {
       setIsLoadingRecommendations(false);
     }
+  };
+
+  // Handler for showing all jobs (exit recommendation mode)
+  const handleShowAllJobs = () => {
+    setIsRecommendationMode(false);
+    setCurrentPage(1);
+    setSearchQuery("");
+    setLocationFilter("all");
+    setTypeFilter("all");
   };
 
   return (
@@ -157,23 +192,91 @@ export default function JobsPageClient({ jobs }: { jobs: any[] }) {
         <Button variant="outline" onClick={() => { setSearchQuery(""); setLocationFilter("all"); setTypeFilter("all"); }}>
           Clear
         </Button>
-        <Button
-          className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white border-0"
-          onClick={() => {
-            // Logic gợi ý job sẽ được implement sau
-            console.log("Suggest jobs clicked");
-          }}
-        >
-          <Sparkles className="mr-2 h-4 w-4" />
-          Gợi ý việc làm
-        </Button>
+        {isRecommendationMode ? (
+          <Button
+            variant="outline"
+            onClick={handleShowAllJobs}
+            className="flex items-center gap-2"
+          >
+            <X className="h-4 w-4" />
+            Show All Jobs
+          </Button>
+        ) : (
+          <Button
+            className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white border-0"
+            onClick={handleGetRecommendations}
+            disabled={isLoadingRecommendations}
+          >
+            {isLoadingRecommendations ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Loading...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Recomend Jobs
+              </>
+            )}
+          </Button>
+        )}
       </div>
 
       {/* DANH SÁCH KẾT QUẢ */}
       <div className="mt-6">
         {/* Đã xóa đoạn thẻ h2 hiển thị chữ Found jobs ở đây */}
 
-        <JobList jobs={paginatedJobs} />
+        {/* Recommendation Banner */}
+        {isRecommendationMode && (
+          <div className="mb-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                <h3 className="text-lg font-semibold text-indigo-900 dark:text-indigo-100">
+                  Recommended Jobs for You
+                </h3>
+              </div>
+              <span className="text-sm text-indigo-700 dark:text-indigo-300">
+                {recommendedJobs.length} jobs found
+              </span>
+            </div>
+            <p className="text-sm text-indigo-600 dark:text-indigo-400 mt-1">
+              These jobs match your skills, experiences, and profile.
+            </p>
+          </div>
+        )}
+
+        {/* Empty State Message */}
+        {finalFilteredJobs.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500 dark:text-gray-400">
+              {isRecommendationMode
+                ? "No recommended jobs found. Try updating your profile with more skills and experiences."
+                : "No jobs found matching your criteria."}
+            </p>
+          </div>
+        ) : (
+          <JobList jobs={paginatedJobs} />
+        )}
 
         {/* UI PHÂN TRANG */}
         {totalPages > 1 && (
