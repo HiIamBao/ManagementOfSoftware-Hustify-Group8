@@ -383,11 +383,11 @@ export async function getJobById(id: string): Promise<Job | null> {
       postedDate: jobData?.postedDate || "",
       company: companyData ||
         jobData?.company || {
-          id: jobData?.companyId || "",
-          name: jobData?.companyName || "Unknown Company",
-          description: jobData?.companyDescription || "",
-          followers: jobData?.companyFollowers || 0,
-        },
+        id: jobData?.companyId || "",
+        name: jobData?.companyName || "Unknown Company",
+        description: jobData?.companyDescription || "",
+        followers: jobData?.companyFollowers || 0,
+      },
       applicantCount: applicantCount,
       responsibilities: jobData?.responsibilities || [],
       requirements: jobData?.requirements || [],
@@ -508,6 +508,196 @@ export async function getUserById(id: string): Promise<User | null> {
     return null;
   }
 }
+
+/**
+ * Get recommended jobs for the current user based on their profile
+ * Matches user skills, experiences, and education with job requirements
+ */
+export async function getRecommendedJobs(limit: number = 10): Promise<Job[]> {
+  try {
+    // Get current authenticated user
+    const user = await getCurrentUser();
+    if (!user) {
+      return [];
+    }
+
+    // Fetch all published jobs
+    const jobsSnapshot = await db
+      .collection("jobs")
+      .where("status", "==", "published")
+      .get();
+
+    if (jobsSnapshot.empty) {
+      return [];
+    }
+
+    const rawJobs = jobsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as any[];
+
+    // Collect unique companyIds
+    const companyIds = Array.from(
+      new Set(
+        rawJobs
+          .map((j) => j.companyId)
+          .filter((id) => typeof id === "string" && id.length > 0)
+      )
+    );
+
+    // Fetch companies in parallel
+    const companyMap: Record<string, any> = {};
+    await Promise.all(
+      companyIds.map(async (cid) => {
+        try {
+          const cdoc = await db.collection("companies").doc(cid).get();
+          if (cdoc.exists) companyMap[cid] = { id: cdoc.id, ...cdoc.data() };
+        } catch (e) {
+          console.error("Error fetching company:", cid, e);
+        }
+      })
+    );
+
+    // Enrich jobs with company info
+    const jobs: Job[] = rawJobs.map((j) => {
+      const compFromId = j.companyId ? companyMap[j.companyId] : null;
+      const company = compFromId || j.company || {
+        id: j.companyId || "",
+        name: j.companyName || "",
+        logo: j.companyLogo || "",
+        description: j.companyDescription || "",
+        followers: j.companyFollowers || 0,
+      };
+
+      const applicantCount =
+        j.applicantCount ||
+        (Array.isArray(j.applicants) ? j.applicants.length : 0) ||
+        0;
+
+      return {
+        id: j.id,
+        title: j.title || "",
+        location: j.location || "",
+        description: j.description || "",
+        postedDate: j.postedDate || j.createdAt || new Date().toISOString(),
+        company,
+        applicantCount,
+        responsibilities: j.responsibilities || [],
+        requirements: j.requirements || [],
+        benefits: j.benefits || [],
+        ...j,
+      } as Job;
+    });
+
+    // Calculate match scores for each job
+    const userSkills = (user.skills || []).map((s) => s.toLowerCase());
+    const userExperiences = (user.experiences || []).join(" ").toLowerCase();
+    const userEducation = (user.education || [])
+      .map((e) => `${e.school} ${e.className}`)
+      .join(" ")
+      .toLowerCase();
+
+    const jobsWithScores = jobs.map((job) => {
+      let score = 0;
+
+      // 1. Skills matching (40% weight)
+      const jobRequirements = (job.requirements || []).join(" ").toLowerCase();
+      const jobDescription = (job.description || "").toLowerCase();
+      const jobText = `${jobRequirements} ${jobDescription}`;
+
+      let skillsMatchCount = 0;
+      userSkills.forEach((skill) => {
+        // Check if skill appears in requirements or description
+        if (jobText.includes(skill)) {
+          skillsMatchCount++;
+        }
+      });
+
+      const skillsScore =
+        userSkills.length > 0
+          ? (skillsMatchCount / userSkills.length) * 40
+          : 0;
+      score += skillsScore;
+
+      // 2. Experience matching (30% weight)
+      const jobResponsibilities = (job.responsibilities || []).join(" ").toLowerCase();
+      const allJobText = `${jobText} ${jobResponsibilities}`;
+
+      // Count how many experience keywords match
+      const experienceKeywords = userExperiences.split(/\s+/).filter((w) => w.length > 3);
+      let experienceMatches = 0;
+      experienceKeywords.forEach((keyword) => {
+        if (allJobText.includes(keyword)) {
+          experienceMatches++;
+        }
+      });
+
+      const experienceScore =
+        experienceKeywords.length > 0
+          ? Math.min((experienceMatches / experienceKeywords.length) * 30, 30)
+          : 0;
+      score += experienceScore;
+
+      // 3. Education matching (10% weight)
+      const educationKeywords = userEducation.split(/\s+/).filter((w) => w.length > 3);
+      let educationMatches = 0;
+      educationKeywords.forEach((keyword) => {
+        if (allJobText.includes(keyword)) {
+          educationMatches++;
+        }
+      });
+
+      const educationScore =
+        educationKeywords.length > 0
+          ? Math.min((educationMatches / educationKeywords.length) * 10, 10)
+          : 0;
+      score += educationScore;
+
+      // 4. Job title relevance (10% weight)
+      const jobTitleLower = job.title.toLowerCase();
+      let titleMatch = false;
+      userSkills.forEach((skill) => {
+        if (jobTitleLower.includes(skill)) {
+          titleMatch = true;
+        }
+      });
+      if (titleMatch) {
+        score += 10;
+      }
+
+      // 5. Company following bonus (5% weight)
+      if (user.followingCompanies?.includes(job.company.id)) {
+        score += 5;
+      }
+
+      // 6. Recency bonus (5% weight) - newer jobs get slight boost
+      const postedDate = new Date(job.postedDate);
+      const daysSincePosted = Math.floor(
+        (Date.now() - postedDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      if (daysSincePosted < 7) {
+        score += 5;
+      } else if (daysSincePosted < 30) {
+        score += 2;
+      }
+
+      return { job, score };
+    });
+
+    // Sort by score (descending) and return top N
+    const recommendedJobs = jobsWithScores
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map((item) => item.job);
+
+    return recommendedJobs;
+  } catch (error) {
+    console.error("Error getting recommended jobs:", error);
+    return [];
+  }
+}
+
+
 
 
 
