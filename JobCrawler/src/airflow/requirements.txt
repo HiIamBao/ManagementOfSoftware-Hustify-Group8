@@ -1,0 +1,10 @@
+six
+dotenv
+requests
+lxml
+pandas==2.3.3
+bs4==0.0.2
+minio==7.2.18
+unidecode
+confluent-kafka
+rq

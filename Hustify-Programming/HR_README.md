@@ -60,7 +60,7 @@ Hustify-Programming/
 
 ## 🔧 Technology Stack
 
-- **Framework**: Next.js 15.2.2
+- **Framework**: Next.js 15.2.6
 - **Language**: TypeScript
 - **Database**: Firestore
 - **Authentication**: Firebase Auth

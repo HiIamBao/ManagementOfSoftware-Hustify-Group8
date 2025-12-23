@@ -304,3 +304,23 @@ export interface ApplicantMetrics {
   rejectedCount: number;
   offeredCount: number;
 }
+
+interface OuterJob {
+  url_hash: string;
+  job_url: string;
+  datetime: string;
+  detail_title: string;
+  detail_salary: string;
+  detail_location: string;
+  detail_experience: string;
+  deadline: string;
+  tags: string;
+  desc_mota: string;
+  desc_yeucau: string;
+  desc_quyenloi: string;
+  working_addresses: string;
+  working_times: string;
+  company_url_from_job: string;
+  general_info: string;
+  box_categories: string;
+}

@@ -132,6 +132,26 @@ const baseNavLinks = [
       </svg>
     ),
   },
+  {
+    href: "/outer-jobs",
+    label: "OUTER JOBS",
+    icon: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-6 h-6"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9 20l-5.447-2.724A2 2 0 013 15.382V5.618a2 2 0 011.553-1.946l6-1.5a2 2 0 01.894 0l6 1.5A2 2 0 0121 5.618v9.764a2 2 0 01-1.553 1.946L15 20m-6 0V4m6 16V4"
+        />
+      </svg>
+    ),
+  },
 ];
 
 const Layout = async ({ children }: { children: ReactNode }) => {
