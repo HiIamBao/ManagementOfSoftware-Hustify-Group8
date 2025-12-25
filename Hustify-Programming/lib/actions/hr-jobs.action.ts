@@ -257,6 +257,9 @@ export async function publishJob(jobId: string) {
               link: `/jobs/${jobId}`,
               isRead: false,
               createdAt: new Date().toISOString(),
+              type: "job_posting",
+              companyId: updatedJobData.companyId,
+              jobId,
             });
           });
           console.log(`Creating ${followers.length} notifications...`);
