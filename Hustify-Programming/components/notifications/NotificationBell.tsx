@@ -1,8 +1,6 @@
 "use client";
 
-"use client";
-
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Bell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { markNotificationAsRead } from '@/lib/actions/notification.action';
@@ -25,6 +23,8 @@ export default function NotificationBell() {
         const q = query(
           collection(db, 'notifications'),
           where('userId', '==', user.uid),
+          // Job-only notifications
+          where('type', '==', 'job_posting'),
           orderBy('createdAt', 'desc')
         );
 
@@ -56,8 +56,24 @@ export default function NotificationBell() {
     router.push(notification.link);
   };
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const unread = notifications.filter((n) => !n.isRead);
+    if (unread.length === 0) return;
+
+    (async () => {
+      await Promise.all(unread.map((n) => markNotificationAsRead(n.id)));
+    })();
+  }, [isOpen, notifications]);
+
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover
+      open={isOpen}
+      onOpenChange={(open) => {
+        setIsOpen(open);
+      }}
+    >
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
