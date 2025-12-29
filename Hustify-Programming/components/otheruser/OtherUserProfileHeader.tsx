@@ -2,7 +2,15 @@
 import React, { useState } from "react";
 import type { User } from "@/types";
 
-export default function OtherUserProfileHeader({ user }: { user: User }) {
+export default function OtherUserProfileHeader({
+  user,
+  actions,
+  children,
+}: {
+  user: User;
+  actions?: React.ReactNode;
+  children?: React.ReactNode;
+}) {
   const [imgError, setImgError] = useState(false);
   const [coverError, setCoverError] = useState(false);
 
@@ -29,11 +37,16 @@ export default function OtherUserProfileHeader({ user }: { user: User }) {
           />
         </div>
         {/* Info */}
-        <div className="ml-40 flex-1 flex flex-col justify-center pt-8">
-          <div className="flex items-center gap-3">
-            <span className="font-bold text-2xl">{user.name}</span>
+        <div className="ml-40 flex-1 flex items-start justify-between gap-4 pt-8">
+          <div className="min-w-0">
+            <div className="flex items-center gap-3">
+              <span className="font-bold text-2xl">{user.name}</span>
+            </div>
+            <div className="text-gray-700 dark:text-white">{user.email}</div>
           </div>
-          <div className="text-gray-700 dark:text-white">{user.email}</div>
+          {(actions || children) && (
+            <div className="flex-shrink-0">{actions || children}</div>
+          )}
         </div>
       </div>
     </div>

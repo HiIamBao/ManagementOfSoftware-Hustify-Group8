@@ -57,14 +57,38 @@ export async function markNotificationAsRead(notificationId: string) {
 
     await notificationRef.update({ isRead: true });
 
-    // Revalidate a path that shows the notification count, e.g., the root layout
+    // Keep client UI in sync (badge counts, etc.)
     revalidatePath("/");
+    revalidatePath("/notices");
 
     return { success: true, message: "Notification marked as read" };
-
   } catch (error) {
     console.error("Error marking notification as read:", error);
     return { success: false, message: "Failed to mark notification as read" };
+  }
+}
+
+export async function markNotificationsAsRead(notificationIds: string[]) {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return { success: false, message: "User not authenticated" };
+    }
+
+    const batch = db.batch();
+    for (const id of notificationIds) {
+      const ref = db.collection("notifications").doc(id);
+      batch.update(ref, { isRead: true });
+    }
+    await batch.commit();
+
+    revalidatePath("/");
+    revalidatePath("/notices");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error marking notifications as read:", error);
+    return { success: false, message: "Failed to mark notifications as read" };
   }
 }
 

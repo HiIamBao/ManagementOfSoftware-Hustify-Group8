@@ -5,6 +5,10 @@ import OtherUserSkills from "@/components/otheruser/OtherUserSkills";
 import OtherUserExperience from "@/components/otheruser/OtherUserExperience";
 import OtherUserEducation from "@/components/otheruser/OtherUserEducation";
 import OtherUserProjects from "@/components/otheruser/OtherUserProjects";
+import OtherUserFriends from "@/components/otheruser/OtherUserFriends";
+import FriendActionButton from "@/components/network/FriendActionButton";
+import MessageUserButton from "@/components/chat/MessageUserButton";
+import { getFriendsForUser, getFriendshipStatusWith } from "@/lib/actions/friends.action";
 import React from "react";
 
 export default async function OtherUserPage({ params }: { params: Promise<{ id: string }> }) {
@@ -15,12 +19,22 @@ export default async function OtherUserPage({ params }: { params: Promise<{ id: 
     return <div className="p-8">User not found.</div>;
   }
 
+  const friendshipStatus = await getFriendshipStatusWith(id);
+
+
+  const friends = await getFriendsForUser(id);
+
   return (
     <section className="bg-gray-100 dark:bg-[#2C2C2C] flex flex-col items-center px-4 py-6">
       <div className="w-full max-w-7xl flex flex-row gap-8">
         <div className="flex-1 min-w-0 pl-10">
           <div className="flex flex-col gap-1">
-            <OtherUserProfileHeader user={user} />
+            <OtherUserProfileHeader user={user}>
+              <div className="flex items-center gap-2 pt-2">
+                <MessageUserButton otherUserId={id} />
+                <FriendActionButton viewedUserId={id} initialStatus={friendshipStatus} />
+              </div>
+            </OtherUserProfileHeader>
             {/* Tabs điều hướng profile */}
             <div className="w-full flex justify-start mt-1 mb-4">
               <div className="flex w-full max-w-4xl">
@@ -51,6 +65,11 @@ export default async function OtherUserPage({ params }: { params: Promise<{ id: 
           <div className="space-y-2">
             <OtherUserInfoBox user={user} />
           </div>
+
+          <div className="mt-6">
+            <OtherUserFriends friends={friends} />
+          </div>
+
           <div className="w-full flex flex-col gap-6 mt-10">
             <OtherUserProjects user={user} />
             <OtherUserSkills user={user} />

@@ -4,6 +4,11 @@ import { db } from "@/firebase/admin";
 import type { BlogPost, BlogComment } from "@/types/blog";
 import { Timestamp } from 'firebase-admin/firestore';
 import { processUrl } from '@/lib/utils';
+import {
+  notifyAuthorFriendReaction,
+  notifyFriendsPostCreated,
+} from './social-notifications.action';
+
 
 // Helper function to convert Firestore timestamp to ISO string
 function convertTimestamp(timestamp: any): string {
@@ -126,7 +131,7 @@ export async function createPost(params: CreatePostParams | FormData): Promise<B
 
     const postRef = db.collection("posts").doc();
     const now = Timestamp.now();
-    
+
     // Create base post data
     const postData = {
       id: postRef.id,
@@ -160,9 +165,13 @@ export async function createPost(params: CreatePostParams | FormData): Promise<B
 
     await postRef.set(finalPostData);
 
+    // Social notification: notify accepted friends that a new post was created.
+    // This is server-side and works even without Cloud Functions.
+    await notifyFriendsPostCreated({ postId: postRef.id, authorId: postParams.userId });
+
     return {
       ...finalPostData,
-      timestamp: now.toDate().toISOString()
+      timestamp: now.toDate().toISOString(),
     };
   } catch (error) {
     console.error("Error creating post:", error);
@@ -177,7 +186,7 @@ export async function getRandomPosts(limit: number = 10): Promise<BlogPost[]> {
     const posts = postsSnapshot.docs
       .map(convertPost)
       .filter((post): post is BlogPost => post !== undefined);
-    
+
     // Shuffle posts randomly
     for (let i = posts.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -196,7 +205,7 @@ export async function toggleLike(postId: string, userId: string): Promise<string
   try {
     const postRef = db.collection("posts").doc(postId);
     const postDoc = await postRef.get();
-    
+
     if (!postDoc.exists) {
       throw new Error("Post not found");
     }
@@ -204,10 +213,23 @@ export async function toggleLike(postId: string, userId: string): Promise<string
     const post = postDoc.data() as BlogPost;
     const likes = new Set(post.likes || []);
 
-    if (likes.has(userId)) {
+    const hadLiked = likes.has(userId);
+
+    if (hadLiked) {
       likes.delete(userId);
     } else {
       likes.add(userId);
+
+      // Social notification: if liking someone else's post, notify the author (only if friends).
+      const postAuthorId = (post as any)?.authorId || (post as any)?.author?.id;
+      if (postAuthorId && postAuthorId !== userId) {
+        await notifyAuthorFriendReaction({
+          postId,
+          postAuthorId,
+          reactorId: userId,
+          reactionType: 'like',
+        });
+      }
     }
 
     const newLikes = Array.from(likes);
@@ -252,7 +274,7 @@ export async function addComment(params: {
     };
 
     const post = postDoc.data() as BlogPost;
-    const existingComments = Array.isArray(post.comments) 
+    const existingComments = Array.isArray(post.comments)
       ? post.comments.map(c => ({
           ...c,
           timestamp: convertTimestamp(c.timestamp)
@@ -260,11 +282,24 @@ export async function addComment(params: {
       : [];
     const newComments = [...existingComments, comment];
 
-    await postRef.update({ 
+    await postRef.update({
       comments: newComments
     });
 
-    return { 
+
+    // Social notification: comment on someone else's post -> notify the author (only if friends).
+    const postAuthorId = (post as any)?.authorId || (post as any)?.author?.id;
+    if (postAuthorId && postAuthorId !== params.userId) {
+      await notifyAuthorFriendReaction({
+        postId: params.postId,
+        postAuthorId,
+        reactorId: params.userId,
+        reactionType: 'comment',
+      });
+    }
+
+
+    return {
       comment,
       comments: newComments
     };
@@ -482,4 +517,4 @@ export async function repostPost(params: {
     console.error("Error reposting:", error);
     throw error;
   }
-} 
+}
