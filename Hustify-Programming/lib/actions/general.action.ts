@@ -268,6 +268,7 @@ export async function getInterviewsByUserId(
 export async function getAllJobs(): Promise<Job[]> {
   const jobsSnapshot = await db
     .collection("jobs")
+    .where("status", "==", "published")
     .orderBy("createdAt", "desc")
     .get();
 
