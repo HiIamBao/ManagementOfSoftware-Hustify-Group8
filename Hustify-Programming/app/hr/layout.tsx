@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import HRUserMenu from "@/components/hr/HRUserMenu";
+import HRNavigation from "@/components/hr/HRNavigation";
 
 export default async function HRLayout({
   children,
@@ -26,36 +27,15 @@ export default async function HRLayout({
               <Link href="/hr/dashboard" className="font-bold text-lg">
                 HR Dashboard
               </Link>
-              <div className="hidden md:flex gap-4">
-                <Link
-                  href="/hr/dashboard"
-                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 text-sm font-medium"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/hr/jobs"
-                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 text-sm font-medium"
-                >
-                  Jobs
-                </Link>
-                <Link
-                  href="/hr/analytics"
-                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 text-sm font-medium"
-                >
-                  Analytics
-                </Link>
-                {user.userRole === 'company-admin' && (
-                  <Link
-                    href="/hr/company/edit"
-                    className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 text-sm font-medium"
-                  >
-                    Company Profile
-                  </Link>
-                )}
-              </div>
+              <HRNavigation userRole={user.userRole} />
             </div>
             <div className="flex items-center gap-3">
+              <Link 
+                href="/" 
+                className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mr-4"
+              >
+                Return to Main Site
+              </Link>
               <HRUserMenu user={user as any} />
             </div>
           </div>
