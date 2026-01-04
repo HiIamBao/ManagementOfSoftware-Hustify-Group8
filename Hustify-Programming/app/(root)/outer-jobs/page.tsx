@@ -12,6 +12,8 @@ export default function OuterJobsPage() {
   const [jobs, setJobs] = useState<OuterJobWithId[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Fetch jobs from API
   useEffect(() => {
@@ -39,9 +41,20 @@ export default function OuterJobsPage() {
   const filteredJobs = jobs.filter(
     (job) =>
       job.detail_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      job.general_info?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (typeof job.general_info === 'string' && job.general_info.toLowerCase().includes(searchTerm.toLowerCase())) ||
       job.tags?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredJobs.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentJobs = filteredJobs.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -69,22 +82,96 @@ export default function OuterJobsPage() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       ) : (
-        /* Jobs List */
-        <div className="grid gap-6">
-          {filteredJobs.length > 0 ? (
-            filteredJobs.map((job) => (
-              <JobCard key={job.id} job={job} />
-            ))
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-gray-500 dark:text-gray-400">
-                {searchTerm
-                  ? "Không tìm thấy công việc phù hợp"
-                  : "Chưa có công việc nào"}
+        <>
+          {/* Jobs List */}
+          <div className="grid gap-6">
+            {currentJobs.length > 0 ? (
+              currentJobs.map((job) => (
+                <JobCard key={job.id} job={job} />
+              ))
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-500 dark:text-gray-400">
+                  {searchTerm
+                    ? "Không tìm thấy công việc phù hợp"
+                    : "Chưa có công việc nào"}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Pagination Controls */}
+          {filteredJobs.length > 0 && (
+            <div className="mt-8 flex flex-col items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  variant="outline"
+                  className="dark:border-gray-600 dark:text-white dark:hover:bg-gray-800"
+                >
+                  « First
+                </Button>
+                <Button
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  variant="outline"
+                  className="dark:border-gray-600 dark:text-white dark:hover:bg-gray-800"
+                >
+                  ‹ Previous
+                </Button>
+                
+                {/* Page Numbers */}
+                <div className="flex gap-2">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    return (
+                      <Button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        className={currentPage === pageNum 
+                          ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                          : "dark:border-gray-600 dark:text-white dark:hover:bg-gray-800"}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  variant="outline"
+                  className="dark:border-gray-600 dark:text-white dark:hover:bg-gray-800"
+                >
+                  Next ›
+                </Button>
+                <Button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  variant="outline"
+                  className="dark:border-gray-600 dark:text-white dark:hover:bg-gray-800"
+                >
+                  Last »
+                </Button>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Showing {startIndex + 1} - {Math.min(endIndex, filteredJobs.length)} of {filteredJobs.length} jobs
               </p>
             </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );
@@ -101,7 +188,7 @@ function JobCard({ job }: { job: OuterJobWithId }) {
   };
   // Extract company name from general_info or use a default
   const getCompanyName = () => {
-    if (job.general_info) {
+    if (job.general_info && typeof job.general_info === 'string') {
       const lines = job.general_info.split("\n");
       return lines[0] || "Unknown Company";
     }
@@ -152,13 +239,13 @@ function JobCard({ job }: { job: OuterJobWithId }) {
           {showDetail ? "Ẩn chi tiết" : "Xem chi tiết"}
         </Button>
         {job.job_url && (
-          <Link href={job.job_url} target="_blank" className="flex-1">
+          <Link href={"http://topcv.vn/"+ job.job_url} target="_blank" className="flex-1">
             <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
               Ứng tuyển
             </Button>
           </Link>
         )}
-        {job.company_url_from_job && (
+        {/* {job.company_url_from_job && (
           <Link href={job.company_url_from_job} target="_blank" className="flex-1">
             <Button
               variant="outline"
@@ -167,7 +254,7 @@ function JobCard({ job }: { job: OuterJobWithId }) {
               Xem công ty
             </Button>
           </Link>
-        )}
+        )} */}
       </div>
 
       {/* Chi tiết công việc */}
