@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Shield, LayoutDashboard, Users, FileText, LogOut, Home, Briefcase, Mic } from "lucide-react";
 import { signOut } from "@/lib/actions/auth.action";
 
+import AdminNavigation from "@/components/admin/AdminNavigation";
+
 export default async function AdminLayout({
   children,
 }: {
@@ -28,43 +30,7 @@ export default async function AdminLayout({
                 <Shield className="h-5 w-5" />
                 Admin Dashboard
               </Link>
-              <div className="hidden md:flex gap-4">
-                <Link
-                  href="/admin/dashboard"
-                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 text-sm font-medium flex items-center gap-2"
-                >
-                  <LayoutDashboard className="h-4 w-4" />
-                  Dashboard
-                </Link>
-                <Link
-                  href="/admin/users"
-                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 text-sm font-medium flex items-center gap-2"
-                >
-                  <Users className="h-4 w-4" />
-                  Users
-                </Link>
-                <Link
-                  href="/admin/jobs"
-                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 text-sm font-medium flex items-center gap-2"
-                >
-                  <Briefcase className="h-4 w-4" />
-                  Jobs
-                </Link>
-                <Link
-                  href="/admin/interviews"
-                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 text-sm font-medium flex items-center gap-2"
-                >
-                  <Mic className="h-4 w-4" />
-                  Interviews
-                </Link>
-                <Link
-                  href="/admin/blogs"
-                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 text-sm font-medium flex items-center gap-2"
-                >
-                  <FileText className="h-4 w-4" />
-                  Blog Posts
-                </Link>
-              </div>
+              <AdminNavigation />
             </div>
             <div className="flex items-center gap-3">
               <Link href="/">

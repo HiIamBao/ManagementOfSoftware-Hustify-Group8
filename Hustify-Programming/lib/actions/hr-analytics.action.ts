@@ -233,3 +233,99 @@ export async function getRecentApplications(limit: number = 10) {
   }
 }
 
+/**
+ * Get application trends (last 30 days)
+ */
+export async function getApplicationTrends() {
+  try {
+    const user = await getCurrentUser();
+    if (!user || user.userRole !== "hr") {
+      return [];
+    }
+
+    const jobsSnapshot = await db
+      .collection("jobs")
+      .where("postedBy", "==", user.id)
+      .get();
+
+    const allApplications: any[] = [];
+    
+    // Collect all applications
+    jobsSnapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      if (data.applicants && Array.isArray(data.applicants)) {
+        allApplications.push(...data.applicants);
+      }
+    });
+
+    // Generate last 30 days array
+    const last30Days = [...Array(30)].map((_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (29 - i));
+      return d.toISOString().split('T')[0]; // YYYY-MM-DD
+    });
+
+    // Group by date
+    const countsByDate = allApplications.reduce((acc, app) => {
+      // Handle different date formats or timestamps
+      const dateStr = app.appliedAt ? new Date(app.appliedAt).toISOString().split('T')[0] : null;
+      if (dateStr && acc[dateStr] !== undefined) {
+        acc[dateStr]++;
+      }
+      return acc;
+    }, last30Days.reduce((acc: any, date) => {
+      acc[date] = 0;
+      return acc;
+    }, {}));
+
+    // Convert to array format for Recharts
+     return last30Days.map(date => {
+       const d = new Date(date);
+       return {
+         date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+         count: countsByDate[date] || 0
+       };
+     });
+
+  } catch (error) {
+    console.error("Error fetching application trends:", error);
+    return [];
+  }
+}
+
+/**
+ * Get top performing jobs by applicant count
+ */
+export async function getJobPerformanceMetrics() {
+  try {
+    const user = await getCurrentUser();
+    if (!user || user.userRole !== "hr") {
+      return [];
+    }
+
+    const jobsSnapshot = await db
+      .collection("jobs")
+      .where("postedBy", "==", user.id)
+      .get();
+
+    const jobs = jobsSnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        title: data.title,
+        applicantCount: data.applicantCount || (data.applicants ? data.applicants.length : 0),
+        status: data.status
+      };
+    });
+
+    // Sort by applicant count descending and take top 5
+    return jobs
+      .sort((a, b) => b.applicantCount - a.applicantCount)
+      .slice(0, 5);
+
+  } catch (error) {
+    console.error("Error fetching job performance metrics:", error);
+    return [];
+  }
+}
+
