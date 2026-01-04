@@ -199,11 +199,18 @@ export async function createFeedback(params: CreateFeedbackParams) {
     }
 
     await feedbackRef.set(feedback);
+    console.log("Feedback saved with ID:", feedbackRef.id);
 
     return { success: true, feedbackId: feedbackRef.id };
-  } catch (error) {
-    console.error("Error saving feedback:", error);
-    return { success: false };
+  } catch (error: any) {
+    console.error("CRITICAL ERROR in createFeedback:", error);
+    // Log additional info about the error if possible
+    if (error instanceof Error) {
+      console.error("Error Name:", error.name);
+      console.error("Error Message:", error.message);
+      console.error("Error Stack:", error.stack);
+    }
+    return { success: false, message: error.message || "Unknown server error" };
   }
 }
 

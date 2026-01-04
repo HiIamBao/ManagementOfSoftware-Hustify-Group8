@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { vapi } from "@/lib/vapi.sdk";
@@ -91,7 +92,7 @@ const Agent = ({
     const handleGenerateFeedback = async (messages: SavedMessage[]) => {
       console.log("handleGenerateFeedback");
 
-      const { success, feedbackId: id } = await createFeedback({
+      const { success, feedbackId: id, message } = await createFeedback({
         interviewId: interviewId!,
         userId: userId!,
         transcript: messages,
@@ -101,8 +102,10 @@ const Agent = ({
       if (success && id) {
         router.push(`/interview/${interviewId}/feedback`);
       } else {
-        console.log("Error saving feedback");
-        router.push("/");
+        console.error("Error saving feedback, redirecting to home.");
+        toast.error(`Failed: ${message || "Unknown error"}`);
+        // Optional: delay redirect so user sees the error
+        setTimeout(() => router.push("/"), 2000);
       }
     };
 
@@ -126,8 +129,8 @@ const Agent = ({
             username: userName,
             userid: userId,
           },
-          clientMessages: ["transcript"],
-          serverMessages: [],
+          clientMessages: ["transcript"] as any,
+          serverMessages: [] as any,
         },
         undefined,
         process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!
@@ -144,8 +147,8 @@ const Agent = ({
         variableValues: {
           questions: formattedQuestions,
         },
-        clientMessages: ["transcript"],
-        serverMessages: [],
+        clientMessages: ["transcript"] as any,
+        serverMessages: [] as any,
       });
     }
   };
